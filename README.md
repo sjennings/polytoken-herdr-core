@@ -36,6 +36,8 @@ its own.
    { "programs": {
        "polytoken": {
          "name": "Polytoken",
+         "icon": "polytoken-icons/polytoken.webp",
+         "tint": false,
          "tile": "#6d28d9",
          "run": [
            "/absolute/path/to/python3",
@@ -50,11 +52,26 @@ its own.
    If the JSON is invalid, Herdr writes the reason to `programs.error` in the
    same folder.
 
-4. **Start Polytoken from Herdr.** Polytoken now appears in the agent menu.
+4. **Add the Polytoken icon.** Copy `assets/polytoken.webp` from this checkout
+   into the herdr-app home folder:
+
+   ```sh
+   mkdir -p ~/.config/herdr-app/polytoken-icons
+   cp /absolute/path/to/polytoken-herdr-core/assets/polytoken.webp \
+      ~/.config/herdr-app/polytoken-icons/polytoken.webp
+   ```
+
+   The image must live inside the herdr-app home folder: Herdr loads icon paths
+   only relative to that folder, so absolute paths, URLs and symlinks pointing
+   elsewhere will not work. `tint` is false because the icon is a full-color
+   picture, not a one-color SVG glyph Herdr recolors. Don't use the folder's
+   `icons/` directory; Herdr manages it.
+
+5. **Start Polytoken from Herdr.** Polytoken now appears in the agent menu.
    Start it in a project folder. The first time, Polytoken may ask you to accept
    an agreement or make a permission decision. Answer in the pane yourself.
 
-5. **Work in the pane.** Herdr shows the session as `working` during a model
+6. **Work in the pane.** Herdr shows the session as `working` during a model
    turn, `idle` when Polytoken hands back control, and `blocked` when it needs
    your answer. You don't need the `hc` commands in this README; the app runs
    them for you. When Polytoken exits, the adapter removes the session's
