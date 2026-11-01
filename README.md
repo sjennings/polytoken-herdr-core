@@ -6,6 +6,74 @@ This adapter works with stock Polytoken. It uses hooks to report session status 
 
 The project is experimental. Human-run tests have confirmed startup, a follow-up prompt, and terminal shutdown with Polytoken 0.9.4 and hc 0.1.15 on macOS. Status reports can arrive late or be lost; `idle` does not mean a task succeeded.
 
+## How to use Polytoken with the Herdr app
+
+The Herdr app's agent menu lists only programs it knows how to start. Polytoken
+is not one of them by default. These steps add it once for all your projects.
+
+You need the Herdr app, Python 3.10 or later, `polytoken` on your PATH, and a
+Polytoken model configuration that already works when you run `polytoken` on
+its own.
+
+1. **Install the adapter's hooks.** From this checkout, run:
+
+   ```sh
+   python3 -m polytoken_herdr.cli prepare --global
+   ```
+
+   This adds the adapter's hooks to your Polytoken user configuration and
+   keeps a backup of the original. See [Install for all projects](#install-for-all-projects)
+   for details.
+
+2. **Note two paths.** Run `which python3` for the interpreter, and `pwd` in
+   this checkout for its location. Both must be absolute paths.
+
+3. **Tell Herdr how to start Polytoken.** Create
+   `~/.config/herdr-app/programs.json` (or `$HERDR_APP_HOME/programs.json`) with
+   the following, substituting your two paths:
+
+   ```json
+   { "programs": {
+       "polytoken": {
+         "name": "Polytoken",
+         "tile": "#6d28d9",
+         "run": [
+           "/absolute/path/to/python3",
+           "/absolute/path/to/polytoken-herdr-core/polytoken_herdr/entry.py",
+           "run", "--global"
+         ]
+       } } }
+   ```
+
+   If the file already exists, add the `polytoken` entry to its `programs`
+   object instead of replacing the file. Herdr reloads the file while it runs.
+   If the JSON is invalid, Herdr writes the reason to `programs.error` in the
+   same folder.
+
+4. **Start Polytoken from Herdr.** Polytoken now appears in the agent menu.
+   Start it in a project folder. The first time, Polytoken may ask you to accept
+   an agreement or make a permission decision. Answer in the pane yourself.
+
+5. **Work in the pane.** Herdr shows the session as `working` during a model
+   turn, `idle` when Polytoken hands back control, and `blocked` when it needs
+   your answer. You don't need the `hc` commands in this README; the app runs
+   them for you. When Polytoken exits, the adapter removes the session's
+   temporary registry.
+
+Polytoken starts with its default model. To choose another, add
+`"--model", "YOUR_MODEL"` after `"--global"`.
+
+Why this command: it runs the adapter's `run` mode inside the pane Herdr
+opens, which lets Polytoken report its status. Bare `polytoken` reports no
+status, and the adapter's `launch` command starts a separate hidden terminal.
+
+If you move this checkout or your Python interpreter changes (for example after
+a version-manager upgrade), Herdr shows Polytoken as not installed. Update the
+paths in `programs.json`.
+
+The app menu entry has not yet had a recorded runtime test. The pane may be
+labelled as Python rather than Polytoken.
+
 ## Try it
 
 You need Python 3.10 or later, `polytoken` and `hc` on your PATH, and a working Polytoken model configuration. The adapter uses Python's standard library. It requires Unix sockets and a PTY; Windows is unsupported, and Linux has not yet been runtime-tested here.
@@ -53,42 +121,11 @@ connection. Ordinary Polytoken sessions do not report to Herdr. Keep any project
 hooks from disabling the adapter's `herdr-*` entries. Global hook discovery and
 the managed global-mode TUI have passed isolated runtime checks.
 
-### Start Polytoken from the Herdr app
-
-The Herdr app lists only programs that have a `run` command in its program
-table, and Polytoken is not built in. After `prepare --global`, add an entry to
-`~/.config/herdr-app/programs.json` (or `$HERDR_APP_HOME/programs.json`):
-
-```json
-{ "programs": {
-    "polytoken": {
-      "name": "Polytoken",
-      "tile": "#6d28d9",
-      "run": [
-        "/absolute/path/to/python3",
-        "/absolute/path/to/polytoken-herdr-core/polytoken_herdr/entry.py",
-        "run", "--global"
-      ]
-    } } }
-```
-
-Use the interpreter from `which python3` and the absolute path to this
-checkout. If the file already exists, merge the `polytoken` entry into its
-`programs` object. Herdr reloads the file while running and reports invalid
-JSON in `programs.error`.
-
-The entry runs the adapter's `run` mode, which wraps Polytoken in the pane
-Herdr opens. Do not use bare `polytoken` or `launch` here: bare Polytoken
-reports no status, and `launch` starts a separate hidden worker. Polytoken uses
-its default model; append `"--model", "YOUR_MODEL"` to choose another. If the
-interpreter or checkout moves, Herdr shows the agent as not installed until you
-update the paths.
-
 ## Work with the session
 
-The `hc` commands below are for using herdr-core directly. The Herdr application
-invokes these controls automatically; you do not need to run them yourself when
-using the app. Permission decisions and answers to questions still belong to you.
+The `hc` commands below are for using herdr-core directly. When you use the
+Herdr app, see [How to use Polytoken with the Herdr app](#how-to-use-polytoken-with-the-herdr-app).
+Permission decisions and answers to questions still belong to you.
 
 Attach to complete startup or answer a question:
 

@@ -10,3 +10,4 @@ node_modules/
 dist/
 target/
 .engram/
+HANDOFF.md
