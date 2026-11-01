@@ -1,0 +1,20 @@
+{
+  "version": 4,
+  "providers": {
+    "local-probe": {
+      "kind": {"type": "custom_open_ai_compatible"},
+      "url": "http://127.0.0.1:18993/v1",
+      "auth": {"type": "no_auth"}
+    }
+  },
+  "models": {
+    "local-probe": {
+      "provider": "local-probe",
+      "provider_name": "local-probe",
+      "variant": "openai",
+      "class": "full",
+      "context_window": 128000,
+      "max_output_tokens_per_turn": 1024
+    }
+  }
+}

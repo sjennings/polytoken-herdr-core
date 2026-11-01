@@ -1,54 +1,96 @@
 # polytoken-herdr-core
 
-A standalone integration between stock Polytoken and herdr-core.
+Run [Polytoken](https://docs.polytoken.dev/) in a [herdr-core](https://github.com/herdrdev/herdr-core) terminal, send it work with `hc`, and see when it is working or waiting for you.
 
-**Status: feasibility investigation. No working adapter or installer yet.**
+This adapter works with stock Polytoken. It uses hooks to report session status to herdr-core and keeps the Polytoken terminal available through `hc attach`. You handle permissions, questions, and first-run agreements yourself.
 
-## Intended behavior
+The project is experimental. Human-run tests have confirmed startup, a follow-up prompt, and terminal shutdown with Polytoken 0.9.4 and hc 0.1.15 on macOS. Status reports can arrive late or be lost; `idle` does not mean a task succeeded.
 
-- Report Polytoken activity and requests for human input to Herdr.
-- Let Polytoken start, inspect, message, and wait for hc-managed terminals.
-- Let users send work to Polytoken and respond to prompts through Herdr.
+## Try it
 
-Polytoken is closed source. This project must use supported hooks,
-configuration, CLI/API surfaces, and external processes; native changes are
-not an option. It must not infer status from screen text or automatically
-approve permission requests.
+You need Python 3.10 or later, `polytoken` and `hc` on your PATH, and a working Polytoken model configuration. The adapter uses Python's standard library. It requires Unix sockets and a PTY; Windows is unsupported, and Linux has not yet been runtime-tested here.
 
-## Verified starting points
+Run the following commands from this checkout. Choose a project with no existing `.polytoken` directory:
 
-- herdr-core accepts program status through OSC 7501, not screen inference.
-- Its JSON-RPC API supports terminal operations and event subscriptions.
-- Polytoken documents hooks for model/tool activity, turn handback, subagents,
-  and opening/closing human-input prompts.
-- Hook stdout is a hook-result channel, not an ordinary terminal-output channel.
-- `polytoken new` launches a daemon and attaches a TUI by default. It supports
-  an initial `--prompt` and a `--no-attach` mode.
+```sh
+python3 -m polytoken_herdr.cli prepare /absolute/project/path/.polytoken
+```
 
-Installed versions inspected during setup: Polytoken 0.9.4 and hc 0.1.15.
-Upstream documentation may describe a newer interface than these binaries.
+This creates the adapter's hooks. It refuses to overwrite an existing directory. Configure your provider and model there if needed; see [setup details](docs/usage.md). Global Polytoken settings may still apply.
 
-## Questions to resolve before implementation
+Launch a session, replacing `YOUR_MODEL` with your configured model name:
 
-1. How can daemon hooks securely target the terminal displaying their session,
-   including detach/reattach and multiple simultaneous sessions?
-2. What exact OSC 7501 payload and lifecycle semantics does installed hc accept?
-3. Which incoming operations can use documented interfaces, and which require
-   a human attached to the terminal? Structured permission/question responses
-   are not yet established as a supported external API.
-4. How can concurrent hook events preserve accurate status without stale
-   background callbacks overwriting newer state?
+```sh
+python3 -m polytoken_herdr.cli launch \
+  --name worker \
+  --cwd /absolute/project/path \
+  --config /absolute/project/path/.polytoken \
+  --model YOUR_MODEL \
+  --prompt 'Inspect the project and summarize its structure.'
+```
 
-## Verification constraints
+Keep this checkout and its Python interpreter in place. The generated hooks refer to both by absolute path.
 
-Runtime tests must use an isolated `HC_SESSION` and scratch XDG paths.
-Never restart or stop the user's core, modify existing terminals, or install
-live global Polytoken hooks as a side effect of tests. Permission decisions
-remain with the user; blocked-terminal protections must not be bypassed.
+## Install for all projects
 
-## Sources
+To use your normal Polytoken user configuration instead of preparing each project:
 
-- [herdr-core](https://github.com/herdrdev/herdr-core)
-- [herdr-core protocol](https://github.com/herdrdev/herdr-core/blob/master/schema/README.md)
-- [Polytoken hooks](https://docs.polytoken.dev/harness-engineering/hooks/)
-- Installed `hc --skill`, `hc --help`, and `polytoken new --help`
+```sh
+python3 -m polytoken_herdr.cli prepare --global
+python3 -m polytoken_herdr.cli launch --global \
+  --name worker --cwd /absolute/project/path \
+  --model YOUR_MODEL --prompt 'Inspect the project.'
+```
+
+The installer adds hooks to `$XDG_CONFIG_HOME/polytoken/hooks.json`, or
+`~/.config/polytoken/hooks.json` when XDG_CONFIG_HOME is unset. It preserves
+existing hook entries and saves the original file as `hooks.json.herdr-backup`.
+Running it again leaves matching hooks unchanged; conflicting names stop the
+installation. Close other configuration editors while installing.
+
+Global hooks report only when a managed launcher supplies its private relay
+connection. Ordinary Polytoken sessions do not report to Herdr. Keep any project
+hooks from disabling the adapter's `herdr-*` entries. Global hook discovery and
+the managed global-mode TUI have passed isolated runtime checks.
+
+## Work with the session
+
+The `hc` commands below are for using herdr-core directly. The Herdr application
+invokes these controls automatically; you do not need to run them yourself when
+using the app. Permission decisions and answers to questions still belong to you.
+
+Attach to complete startup or answer a question:
+
+```sh
+hc attach worker
+```
+
+Press **Ctrl+\\** to detach from the viewer while leaving Polytoken running. Use hc's viewer for this; moving the session with Polytoken's own detach commands is unsupported.
+
+After startup, inspect its status or send another task:
+
+```sh
+hc get worker
+hc send worker 'Describe the test setup.' --if idle --wait
+```
+
+If Polytoken needs a permission decision, attach and make that decision yourself. Do not send approval keys through automation or bypass a blocked terminal with `--force`.
+
+When you are finished:
+
+```sh
+hc kill worker
+hc rm worker
+```
+
+Closing the managed session triggers cleanup of its private Polytoken registry. Treat these sessions as temporary: the registry is not durable conversation history. If cleanup fails, the adapter prints the retained registry path. See [cleanup and recovery](docs/usage.md#cleanup-and-recovery).
+
+## Status and limits
+
+Herdr shows `working` when a model turn starts, `idle` when Polytoken hands back control, and `blocked` while a reported human-input prompt remains open. The adapter reads hook events, not screen text, and never reports `done`.
+
+Reports are best effort. Use the conversation and the actual task results to judge completion. The adapter does not change Polytoken's permissions or isolate it from your global configuration.
+
+The combined tests confirmed ordinary input, reattachment to a question, and terminal termination. Both observed processes exited in the global-mode test. That does not establish that every detached daemon exits or cover every permission path. The test provider's repeated-question bug is fixed, but answering and returning to idle still needs a stock-TUI check. The [verification record](docs/review.md) lists the evidence and limits.
+
+For configuration, status details, and disposable test commands, see [setup and use](docs/usage.md).
