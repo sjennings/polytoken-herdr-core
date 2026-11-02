@@ -1,10 +1,18 @@
 # polytoken-herdr-core
 
+![Polytoken mod card](preview.png)
+
 Run [Polytoken](https://docs.polytoken.dev/) in a [herdr-core](https://github.com/herdrdev/herdr-core) terminal, send it work with `hc`, and see when it is working or waiting for you.
 
 This adapter works with stock Polytoken. It uses hooks to report session status to herdr-core and keeps the Polytoken terminal available through `hc attach`. You handle permissions, questions, and first-run agreements yourself.
 
 The project is experimental. Human-run tests have confirmed startup, a follow-up prompt, and terminal shutdown with Polytoken 0.9.4 and hc 0.1.15 on macOS. Status reports can arrive late or be lost; `idle` does not mean a task succeeded.
+
+## What is Polytoken?
+
+[Polytoken](https://docs.polytoken.dev/) is a local-first AI coding agent: a daemon manages conversations with AI providers, runs tools in your projects, and you drive it through a CLI and a terminal UI (TUI). Sessions keep running in the daemon while you are detached from the terminal.
+
+This plugin makes that agent visible inside the Herdr app: it reports each session's status (`working`, `idle`, `blocked`) to herdr-core as it works, adds Polytoken to the app's agent menu, and provides the Polytoken pane mod.
 
 ## Install as a Herdr app plugin
 
@@ -64,7 +72,7 @@ herdr-app do pane.split --direction right --mod polytoken
   `install.sh` command that fixes it. It only reads; it never installs or
   repairs anything itself.
 
-`RECIPE.md` describes the pane for herdr.dev/mods; `preview.png` shows it.
+`RECIPE.md` describes the pane for herdr.dev/mods; the [pane screenshot](docs/screenshot.png) shows it.
 
 ## How to use Polytoken with the Herdr app
 

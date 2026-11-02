@@ -1,0 +1,215 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 2000px; height: 1000px; overflow: hidden; }
+  body {
+    font-family: "Inter", "Geist", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: #0a1120;
+    color: #e6ecf5;
+    position: relative;
+  }
+  /* subtle grid + glow */
+  .bg-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(120,150,220,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,150,220,0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  .bg-glow {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(900px 500px at 15% 20%, rgba(64,110,230,0.18), transparent 60%),
+      radial-gradient(800px 500px at 85% 85%, rgba(150,70,220,0.14), transparent 60%);
+  }
+  .content {
+    position: absolute; inset: 0;
+    padding: 64px 72px;
+    display: flex;
+  }
+  .left { width: 1020px; position: relative; }
+  .pill-row { display: flex; align-items: center; gap: 14px; }
+  .pill {
+    display: inline-block; padding: 8px 18px; border-radius: 999px;
+    border: 1px solid rgba(140,170,240,0.35);
+    background: rgba(30,48,90,0.5);
+    font-size: 20px; font-weight: 600; letter-spacing: 0.04em; color: #b9c8e8;
+  }
+  .pill-row .gh { font-size: 20px; color: #7d8db0; font-weight: 500; }
+  .brand-row { display: flex; align-items: center; gap: 18px; margin-top: 34px; }
+  .icon {
+    width: 76px; height: 76px; border-radius: 20px;
+    background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 55%, #2563eb 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 30px rgba(90,60,220,0.45);
+    font-size: 38px; font-weight: 800; color: #fff; letter-spacing: -0.02em;
+  }
+  .mod-name { font-size: 34px; font-weight: 700; color: #f0f4fb; }
+  h1 {
+    margin-top: 44px; font-size: 72px; line-height: 1.08; font-weight: 800;
+    letter-spacing: -0.02em; color: #f2f6fd;
+  }
+  h1 .grad {
+    background: linear-gradient(90deg, #4f8ef7 0%, #c26bf0 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lede {
+    margin-top: 30px; font-size: 25px; line-height: 1.5; color: #a7b4cf;
+    max-width: 900px;
+  }
+  .features { margin-top: 44px; display: flex; flex-direction: column; gap: 22px; }
+  .feat { display: flex; align-items: baseline; gap: 16px; font-size: 23px; }
+  .feat .n {
+    flex: none; width: 34px; height: 34px; border-radius: 10px;
+    border: 1px solid rgba(140,170,240,0.4); color: #8fb0f5;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; transform: translateY(5px);
+  }
+  .feat b { color: #eef3fb; font-weight: 700; }
+  .feat span { color: #93a1c0; font-weight: 400; }
+  code {
+    font-family: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 0.92em; color: #9fc3ff;
+    background: rgba(50,80,150,0.25); border-radius: 6px; padding: 1px 7px;
+  }
+  /* right side: herdr window mockup */
+  .right { position: relative; flex: 1; }
+  .window {
+    position: absolute; top: 70px; right: 0; width: 780px; height: 620px;
+    background: #101827; border: 1px solid rgba(130,160,220,0.22);
+    border-radius: 16px; box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+    overflow: hidden;
+  }
+  .titlebar {
+    height: 40px; background: #0c1322; border-bottom: 1px solid rgba(130,160,220,0.15);
+    display: flex; align-items: center; gap: 8px; padding: 0 16px;
+  }
+  .tl { width: 12px; height: 12px; border-radius: 50%; }
+  .tl.r { background: #ff5f57; } .tl.y { background: #febc2e; } .tl.g { background: #28c840; }
+  .tab {
+    margin-left: 18px; padding: 6px 16px; border-radius: 8px 8px 0 0;
+    background: #1a2438; font-size: 14px; color: #c6d2ea; position: relative; top: 9px;
+  }
+  .win-body { display: flex; height: 580px; }
+  .sidebar {
+    width: 200px; background: #0d1524; border-right: 1px solid rgba(130,160,220,0.12);
+    padding: 14px 12px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .side-label { font-size: 12px; color: #6c7a99; font-weight: 600; letter-spacing: 0.06em; margin: 4px 0 2px; }
+  .side-item { font-size: 14px; color: #a9b6d2; padding: 7px 10px; border-radius: 8px; }
+  .side-item.active { background: rgba(80,110,210,0.25); color: #e8eefb; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; transform: translateY(-1px); }
+  .dot.working { background: #38bdf8; } .dot.idle { background: #4ade80; } .dot.blocked { background: #fbbf24; }
+  .pane {
+    flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px;
+    font-size: 15px;
+  }
+  .pane-header { display: flex; align-items: baseline; gap: 10px; }
+  .pane-header .t { font-size: 17px; font-weight: 600; color: #eef3fb; }
+  .pane-header .s { font-size: 13px; color: #6c7a99; }
+  .card {
+    background: #16203266; border: 1px solid rgba(130,160,220,0.18);
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .setup .head { color: #fbbf24; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .setup .line { color: #93a1c0; font-size: 13px; }
+  .setup .cmd { color: #9fc3ff; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 600; margin-top: 6px; }
+  .label { font-size: 12px; color: #6c7a99; }
+  .row { display: flex; gap: 10px; }
+  .input {
+    flex: 1; height: 34px; border-radius: 8px; background: #0d1524;
+    border: 1px solid rgba(130,160,220,0.25); color: #5c6a88;
+    display: flex; align-items: center; padding: 0 12px; font-size: 14px;
+  }
+  .btn {
+    height: 34px; padding: 0 16px; border-radius: 8px; display: flex; align-items: center;
+    font-size: 14px; font-weight: 600;
+  }
+  .btn.solid { background: #4f6ef0; color: #fff; }
+  .btn.ghost { border: 1px solid rgba(130,160,220,0.35); color: #c6d2ea; }
+  .sess { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid rgba(130,160,220,0.1); }
+  .sess .title { font-size: 14px; color: #dbe4f5; font-weight: 500; flex: 1; }
+  .sess .meta { font-size: 12px; color: #6c7a99; }
+  .mini {
+    font-size: 11px; padding: 3px 9px; border-radius: 6px;
+    border: 1px solid rgba(130,160,220,0.3); color: #a9b6d2; margin-left: 6px;
+  }
+  .float-card {
+    position: absolute; right: 640px; top: 560px; width: 300px;
+    background: #141e30; border: 1px solid rgba(140,170,240,0.35);
+    border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  }
+  .float-card .k { font-size: 12px; color: #6c7a99; font-weight: 600; letter-spacing: 0.05em; }
+  .float-card .v { font-size: 15px; color: #e8eefb; margin-top: 6px; }
+  .float-card .v b { color: #4ade80; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+  <div class="content">
+    <div class="left">
+      <div class="pill-row">
+        <span class="pill">Herdr mod</span>
+        <span class="gh">polytoken-herdr-core &middot; GitHub</span>
+      </div>
+      <div class="brand-row">
+        <div class="icon">P</div>
+        <div class="mod-name">polytoken</div>
+      </div>
+      <h1>Run Polytoken in Herdr.<br><span class="grad">See when it needs you.</span></h1>
+      <p class="lede">A plugin that runs the local-first Polytoken coding agent in a
+      herdr-core terminal and reports each session's status to the app &mdash;
+      so you can launch, resume and supervise it without leaving Herdr.</p>
+      <div class="features">
+        <div class="feat"><span class="n">1</span><div><b>Start a session</b> <span>from the pane &mdash; reports <code>working</code> / <code>idle</code> / <code>blocked</code></span></div></div>
+        <div class="feat"><span class="n">2</span><div><b>Resume recent sessions</b> <span>into a new tab or split, with one click</span></div></div>
+        <div class="feat"><span class="n">3</span><div><b>Setup check</b> <span>shows the one <code>install.sh</code> command that fixes a broken install</span></div></div>
+        <div class="feat"><span class="n">4</span><div><b>Works with stock Polytoken</b> <span>&mdash; status comes from hooks, no fork required</span></div></div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="window">
+        <div class="titlebar">
+          <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
+          <span class="tab">Polytoken</span>
+        </div>
+        <div class="win-body">
+          <div class="sidebar">
+            <div class="side-label">AGENTS</div>
+            <div class="side-item"><span class="dot working"></span>refactor-auth</div>
+            <div class="side-item"><span class="dot idle"></span>docs-sweep</div>
+            <div class="side-item"><span class="dot blocked"></span>fix-flaky-test</div>
+          </div>
+          <div class="pane">
+            <div class="pane-header"><span class="t">Polytoken</span><span class="s">launch and resume</span></div>
+            <div class="card setup">
+              <div class="head">Setup incomplete</div>
+              <div class="line">Global status hooks are missing</div>
+              <div class="cmd">./install.sh</div>
+            </div>
+            <div class="label">Start a session</div>
+            <div class="row">
+              <div class="input">default model</div>
+              <div class="btn solid">New tab</div>
+              <div class="btn ghost">Split right</div>
+            </div>
+            <div class="label">Resume a recent session</div>
+            <div class="sess"><span class="title">Summarize the test setup</span><span class="meta">demo-app &middot; 3h ago</span><span class="mini">Tab</span><span class="mini">Split</span></div>
+            <div class="sess"><span class="title">Draft release notes</span><span class="meta">demo-app &middot; running</span><span class="mini">Tab</span><span class="mini">Split</span></div>
+            <div class="sess"><span class="title">Migrate config format</span><span class="meta">toolkit &middot; 2d ago</span><span class="mini">Tab</span><span class="mini">Split</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="float-card">
+        <div class="k">SESSION STATUS</div>
+        <div class="v">refactor-auth &mdash; <b>working</b></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
