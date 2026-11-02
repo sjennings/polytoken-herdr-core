@@ -47,10 +47,16 @@ herdr-app do pane.split --direction right --mod polytoken
   **Split right**. The pane launches the adapter's `run --global` mode, so
   the session reports `working` / `idle` / `blocked` like any Herdr agent.
 - **Resume a recent session**: the newest stored sessions from
-  `polytoken sessions --all` that are not running, with title, project
-  folder and last activity. **Tab** or **Split** resumes one through the
-  adapter (`run --global --continue <id>`) from its project folder, so it
-  reports status too. Running sessions stay in the app's sidebar.
+  `polytoken sessions --all`, with title, project folder and last activity,
+  or "running" when the session's daemon is still up. **Tab** or **Split**
+  resumes one through the adapter (`run --global --continue <id>`) from its
+  project folder; `polytoken continue` reattaches a running daemon. Status
+  reporting on resume is expected but not yet verified at runtime.
+  A resumed session's daemon lives in Polytoken's own registry, and the
+  adapter never reaps it: closing the tab leaves it running, detached, and
+  it stays in this list as "running" for the next resume. Polytoken does
+  not report whether a TUI is attached, so a running session that is open
+  in another terminal is listed too; check the sidebar before resuming it.
 - **Setup check**: when the launcher, the app-menu entry or the global
   hooks are missing, the pane says what is missing and shows the one
   `install.sh` command that fixes it. It only reads; it never installs or

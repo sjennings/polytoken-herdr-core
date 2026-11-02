@@ -26,7 +26,8 @@ One column, 12 px padding, theme `background`, all text in the UI font.
 - **Resume a recent session**: an 11.5 px `dim` label with a bordered
   "Refresh" button, then up to 12 rows, 30 px each: the session title
   (or its last message, or its ID) truncated in 12.5 px, the project
-  folder name and last activity ("3h ago") in 11.5 px `dim`, and two
+  folder name and last activity ("3h ago", or "running" while its daemon
+  is up) in 11.5 px `dim`, and two
   22 px bordered buttons, "Tab" and "Split". While reading, with nothing
   stored, or when `polytoken` cannot list sessions, one 12 px `muted`
   line says so.
@@ -40,10 +41,12 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   `idle` and `blocked` like every Herdr agent.
 - The resume list is read when the pane opens and on "Refresh": stored
   sessions from `polytoken sessions --all --format json`, newest first,
-  leaving out running ones, subagent sessions and legacy records without
-  metadata. "Tab" opens a new tab and "Split" splits the focused pane,
+  leaving out subagent sessions and legacy records without metadata.
+  Running sessions stay listed: a detached daemon is resumable, and
+  `polytoken continue` reattaches it. "Tab" opens a new tab and "Split" splits the focused pane,
   both running the launcher with `--continue <id>` from the session's
-  project folder, so the resumed session reports status like a new one.
+  project folder. The resumed session is expected to report status like a
+  new one; that is not yet verified at runtime.
 - The setup check runs when the pane opens and when "Check again" is
   pressed. It reads; it never installs, repairs or writes anything.
 - With nothing missing, the setup card is absent.
@@ -83,9 +86,11 @@ One column, 12 px padding, theme `background`, all text in the UI font.
 - Sessions started through the adapter use a private registry that is
   deleted on exit, so they never appear in the resume list; the list shows
   Polytoken's own stored history. A resumed session runs in Polytoken's
-  default registry and the adapter does not reap it. Whether status binds
-  on resume (the daemon must report `session_start`) is not yet
-  runtime-tested.
+  default registry and the adapter does not reap it, so closing its tab
+  leaves the daemon running, detached. Polytoken reports no TUI
+  attachment, so the list cannot hide a running session that is open in
+  another terminal. Whether status binds on resume (the daemon must report
+  `session_start`) is not yet runtime-tested.
 - A copied (not linked) mod cannot name its checkout, so the setup card
   shows `./install.sh` with a note to run it from the checkout.
 - With `XDG_CONFIG_HOME` set, the hooks check follows it, matching the
@@ -98,6 +103,9 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   `./uninstall.sh` it lists the missing pieces and the `install.sh`
   command.
 - "New tab" with a model opens a tab whose agent turns `working` during a
-  model turn; a stored session's "Tab" button resumes it in a new tab.
+  model turn.
+- Not yet verified: a stored session's "Tab" button resumes it in a new
+  tab that reports status, and a closed resumed tab's session comes back
+  as "running" and reattaches.
 - `tests/test_plugin_scripts.py` links and unlinks the mod with the rest of
   the plugin.

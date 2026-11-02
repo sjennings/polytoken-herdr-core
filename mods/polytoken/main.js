@@ -21,7 +21,7 @@ async function installCommand() {
   return checkout ? `cd ${shellQuote(checkout)} && ./install.sh` : INSTALL_FALLBACK;
 }
 
-/** Stored sessions that are not running, newest first; null when Polytoken
+/** Stored sessions, running ones included, newest first; null when Polytoken
  *  cannot list them. Subagent and legacy records are left out. */
 async function recentSessions() {
   const out = await exec("polytoken", ["sessions", "--all", "--format", "json"]).catch(() => null);
@@ -30,7 +30,7 @@ async function recentSessions() {
   try { list = JSON.parse(out.stdout); } catch { return null; }
   if (!Array.isArray(list)) return null;
   return list
-    .filter((s) => s && typeof s.session_id === "string" && !s.is_live
+    .filter((s) => s && typeof s.session_id === "string"
       && s.parent_session_id?.kind === "standalone")
     .sort((a, b) => String(b.last_activity_at ?? "").localeCompare(String(a.last_activity_at ?? "")))
     .slice(0, RECENT_LIMIT);
@@ -164,7 +164,7 @@ export default class Polytoken extends View {
       .cursor_pointer().hover((s) => s.bg(t.hover)).on_click(onClick).child(label);
     const row = (s) => {
       const folder = typeof s.project_path === "string" ? s.project_path.split("/").filter(Boolean).pop() ?? "" : "";
-      const detail = [folder, ago(s.last_activity_at)].filter(Boolean).join(" · ");
+      const detail = [folder, s.is_live ? "running" : ago(s.last_activity_at)].filter(Boolean).join(" · ");
       return h_flex().id(`r-${s.session_id}`).gap(8).px(8).h(30).items_center().rounded(6)
         .hover((st) => st.bg(t.hover))
         .child(div().flex_1().min_w(0).truncate().text_size(12.5).text_color(t.foreground)
