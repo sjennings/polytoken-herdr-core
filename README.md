@@ -6,6 +6,12 @@ This adapter works with stock Polytoken. It uses hooks to report session status 
 
 The project is experimental. Human-run tests have confirmed startup, a follow-up prompt, and terminal shutdown with Polytoken 0.9.4 and hc 0.1.15 on macOS. Status reports can arrive late or be lost; `idle` does not mean a task succeeded.
 
+## What is Polytoken?
+
+[Polytoken](https://docs.polytoken.dev/) is a local-first AI coding agent: a daemon manages conversations with AI providers, runs tools in your projects, and you drive it through a CLI and a terminal UI (TUI). Sessions keep running in the daemon while you are detached from the terminal.
+
+This plugin makes that agent visible inside the Herdr app: it reports each session's status (`working`, `idle`, `blocked`) to herdr-core as it works, adds Polytoken to the app's agent menu, and provides the Polytoken pane mod.
+
 ## Install as a Herdr app plugin
 
 One script links this checkout into your PATH, Claude Code, and the Herdr
