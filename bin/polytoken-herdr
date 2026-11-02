@@ -1,0 +1,21 @@
+#!/bin/sh
+# Run polytoken-herdr-core commands from any directory.
+#
+#   polytoken-herdr run --global              run Polytoken here, status reported
+#   polytoken-herdr launch --global --name w  start a hidden hc-managed session
+#   polytoken-herdr prepare --global          install the global status hooks
+#
+# POLYTOKEN_HERDR_PYTHON overrides the interpreter (default: python3 on PATH).
+set -eu
+
+self=$0
+while [ -L "$self" ]; do
+  target=$(readlink "$self")
+  case $target in
+    /*) self=$target ;;
+    *) self=$(dirname "$self")/$target ;;
+  esac
+done
+root=$(cd "$(dirname "$self")/.." && pwd -P)
+
+exec "${POLYTOKEN_HERDR_PYTHON:-python3}" "$root/polytoken_herdr/entry.py" "$@"

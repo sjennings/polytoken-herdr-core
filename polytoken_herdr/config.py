@@ -57,9 +57,10 @@ def prepare_global(path):
     missing = [entry for entry in hooks() if entry["name"] not in seen]
     if not missing:
         return
-    # Refuse to overwrite an earlier recovery copy.
-    if original is not None:
-        with (path / "hooks.json.herdr-backup").open("xb") as backup:
+    # Keep the earliest recovery copy; entries are only ever appended.
+    backup_path = path / "hooks.json.herdr-backup"
+    if original is not None and not (backup_path.exists() or backup_path.is_symlink()):
+        with backup_path.open("xb") as backup:
             os.chmod(backup.name, 0o600)
             backup.write(original)
     fd, temporary = tempfile.mkstemp(prefix=".herdr-hooks-", dir=path)
@@ -73,6 +74,51 @@ def prepare_global(path):
         os.replace(temporary, target)
     finally:
         Path(temporary).unlink(missing_ok=True)
+
+
+def remove_global(path):
+    """Remove this adapter's global hooks, including stale copies.
+
+    Owns the ``herdr-<event>`` names: entries carrying them are removed
+    whatever handler they name (a moved checkout leaves stale entries), and
+    so are string entries disabling them. Other entries are preserved.
+    Returns the number of entries removed.
+    """
+    path = Path(path)
+    target = path / "hooks.json"
+    if not target.exists():
+        return 0
+    if target.is_symlink():
+        raise ValueError("Refusing a symlinked hooks.json")
+    original = target.read_bytes()
+    entries = json.loads(original)
+    if not isinstance(entries, list):
+        raise ValueError("hooks.json must contain an array")
+    names = {entry["name"] for entry in hooks()}
+
+    def ours(entry):
+        if isinstance(entry, dict):
+            return isinstance(entry.get("name"), str) and entry["name"] in names
+        if isinstance(entry, str):
+            return entry.lstrip("!") in names
+        return False
+
+    kept = [entry for entry in entries if not ours(entry)]
+    removed = len(entries) - len(kept)
+    if not removed:
+        return 0
+    fd, temporary = tempfile.mkstemp(prefix=".herdr-hooks-", dir=path)
+    try:
+        with os.fdopen(fd, "w") as output:
+            json.dump(kept, output, indent=2)
+            output.write("\n")
+        current = target.read_bytes()
+        if current != original or target.is_symlink():
+            raise ValueError("hooks.json changed during removal; retry after inspecting it")
+        os.replace(temporary, target)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+    return removed
 
 
 def validate_project_with_global(cwd):

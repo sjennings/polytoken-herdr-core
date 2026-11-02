@@ -6,10 +6,72 @@ This adapter works with stock Polytoken. It uses hooks to report session status 
 
 The project is experimental. Human-run tests have confirmed startup, a follow-up prompt, and terminal shutdown with Polytoken 0.9.4 and hc 0.1.15 on macOS. Status reports can arrive late or be lost; `idle` does not mean a task succeeded.
 
+## Install as a Herdr app plugin
+
+One script links this checkout into your PATH, Claude Code, and the Herdr
+app:
+
+```sh
+git clone https://github.com/sjennings/polytoken-herdr-core
+cd polytoken-herdr-core && ./install.sh
+```
+
+It installs five things and is safe to rerun:
+
+- `bin/polytoken-herdr` into `~/.local/bin`, so `polytoken-herdr run --global` and the other adapter commands work from any directory.
+- The agent skill in `skill/polytoken-herdr` into `~/.claude/skills`, so agents know the commands.
+- The `polytoken` mod in `mods/polytoken` into the app's `mods/` folder, checked with `herdr-app check`.
+- The `polytoken` entry in the Herdr app's `programs.json` (other entries preserved) and the icon copied into the app home, so Polytoken appears in the agent menu.
+- The global status hooks, as `prepare --global` installs them.
+
+`./uninstall.sh` reverses all five; run it from this checkout before
+deleting the checkout. If you move the checkout, rerun `./install.sh`; when
+`prepare --global` reports a conflict with stale hooks from the old
+location, run `polytoken-herdr remove --global` once and rerun the
+installer. An existing manual `programs.json` entry keeps working; rerunning
+`install.sh` replaces it with the launcher form and saves the previous file
+as `programs.json.herdr-backup`.
+
+## The Polytoken pane
+
+The mod adds one pane for the plugin's own work, not a second agent list
+(the app's sidebar already shows every session's status). Open it as a tab
+or a split:
+
+```sh
+herdr-app do tab.new --name Polytoken --mod polytoken
+herdr-app do pane.split --direction right --mod polytoken
+```
+
+- **Start a session**: type an optional model name, then **New tab** or
+  **Split right**. The pane launches the adapter's `run --global` mode, so
+  the session reports `working` / `idle` / `blocked` like any Herdr agent.
+- **Resume a recent session**: the newest stored sessions from
+  `polytoken sessions --all`, with title, project folder and last activity,
+  or "running" when the session's daemon is still up. **Tab** or **Split**
+  resumes one through the adapter (`run --global --continue <id>`) from its
+  project folder. For a session that is not running, status reporting is
+  expected but not yet verified at runtime. A "running" session is
+  reattached by `polytoken continue`, and is not expected to report status:
+  its daemon's hooks still carry the relay of the launch that started it.
+  A resumed session's daemon lives in Polytoken's own registry, and the
+  adapter never reaps it: closing the tab leaves it running, detached, and
+  it stays in this list as "running". Polytoken does
+  not report whether a TUI is attached, so a running session that is open
+  in another terminal is listed too; check the sidebar before resuming it.
+- **Setup check**: when the launcher, the app-menu entry or the global
+  hooks are missing, the pane says what is missing and shows the one
+  `install.sh` command that fixes it. It only reads; it never installs or
+  repairs anything itself.
+
+`RECIPE.md` describes the pane for herdr.dev/mods; `preview.png` shows it.
+
 ## How to use Polytoken with the Herdr app
 
 The Herdr app's agent menu lists only programs it knows how to start. Polytoken
-is not one of them by default. These steps add it once for all your projects.
+is not one of them by default. These steps add it once for all your projects;
+they are the manual equivalent of `install.sh`, spelled out for transparency
+and for installs without scripts.
 
 You need the Herdr app, Python 3.10 or later, `polytoken` on your PATH, and a
 Polytoken model configuration that already works when you run `polytoken` on
@@ -50,7 +112,10 @@ its own.
    If the file already exists, add the `polytoken` entry to its `programs`
    object instead of replacing the file. Herdr reloads the file while it runs.
    If the JSON is invalid, Herdr writes the reason to `programs.error` in the
-   same folder.
+   same folder. When the launcher is linked into `~/.local/bin` (the first
+   thing `install.sh` does), the `run` array can be the shorter
+   `["/home/you/.local/bin/polytoken-herdr", "run", "--global"]`, which
+   survives interpreter changes; that is the form `install.sh` writes.
 
 4. **Add the Polytoken icon.** Copy `assets/polytoken.webp` from this checkout
    into the herdr-app home folder:
@@ -86,7 +151,12 @@ status, and the adapter's `launch` command starts a separate hidden terminal.
 
 If you move this checkout or your Python interpreter changes (for example after
 a version-manager upgrade), Herdr shows Polytoken as not installed. Update the
-paths in `programs.json`.
+paths in `programs.json`, or rerun `install.sh`: it rewrites the entry in the
+launcher form, which resolves the interpreter at run time. The generated hooks
+still name the interpreter `prepare --global` ran with, and a changed
+interpreter makes them stale; `prepare --global` then reports them as a
+conflict, so run `polytoken-herdr remove --global` once and rerun
+`install.sh`.
 
 The app menu entry has not yet had a recorded runtime test. The pane may be
 labelled as Python rather than Polytoken.

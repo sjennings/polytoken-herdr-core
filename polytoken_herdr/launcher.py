@@ -35,10 +35,12 @@ def launch_command(name, cwd, config, model, prompt):
     return command
 
 
-def polytoken_command(config, sessions, model, prompt):
+def polytoken_command(config, sessions, model, prompt, resume=None):
     command = ["polytoken"]
     if config is not None:
         command += ["--config-dir", str(config)]
+    if resume:
+        return command + ["continue", "--", resume]
     command += ["new", "--sessions-dir", str(sessions)]
     if model:
         command += ["--model", model]
@@ -99,7 +101,7 @@ def wait_for_tui(command, env):
 
 
 @termination_cleanup()
-def run(config, model, prompt):
+def run(config, model, prompt, resume=None):
     if config is None:
         validate_global(global_directory())
         validate_project_with_global(Path.cwd())
@@ -117,7 +119,8 @@ def run(config, model, prompt):
             with Relay(root / "relay.sock", output, clear_on_exit=True) as relay:
                 env.update(POLYTOKEN_HERDR_SOCKET=str(relay.path), POLYTOKEN_HERDR_TOKEN=relay.token)
                 try:
-                    return run_proxy(polytoken_command(config, root / "sessions", model, prompt), env, output)
+                    return run_proxy(polytoken_command(config, root / "sessions", model, prompt, resume),
+                                     env, output)
                 finally:
                     ignore_termination()
     finally:

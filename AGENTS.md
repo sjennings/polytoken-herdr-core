@@ -55,7 +55,7 @@ process disappearance; they cannot rule out unobserved detached processes.
 
 ## Verified delivery and follow-up roadmap
 
-77 tests pass. Project and global human runs established status, ordinary send,
+93 tests pass. Project and global human runs established status, ordinary send,
 viewer detach/reattach and terminal shutdown with status cleared. Two observed
 processes disappeared in the global run. Global headless question probe passed
 blocked status, close-on-reap and empty private session listing. Full evidence
