@@ -1,5 +1,7 @@
 # polytoken-herdr-core
 
+![Polytoken mod card](preview.png)
+
 Run [Polytoken](https://docs.polytoken.dev/) in a [herdr-core](https://github.com/herdrdev/herdr-core) terminal, send it work with `hc`, and see when it is working or waiting for you.
 
 This adapter works with stock Polytoken. It uses hooks to report session status to herdr-core and keeps the Polytoken terminal available through `hc attach`. You handle permissions, questions, and first-run agreements yourself.
@@ -70,7 +72,7 @@ herdr-app do pane.split --direction right --mod polytoken
   `install.sh` command that fixes it. It only reads; it never installs or
   repairs anything itself.
 
-`RECIPE.md` describes the pane for herdr.dev/mods; `preview.png` shows it.
+`RECIPE.md` describes the pane for herdr.dev/mods; the [pane screenshot](docs/screenshot.png) shows it.
 
 ## How to use Polytoken with the Herdr app
 

@@ -6,7 +6,7 @@ fix with one command — when the plugin is not fully installed. It is a
 launcher and a setup check, not a second agent list; the app's sidebar
 already shows every running agent and its status.
 
-![Polytoken](preview.png)
+![Polytoken pane](screenshot.png)
 
 ## What you see
 
