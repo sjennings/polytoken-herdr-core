@@ -26,6 +26,7 @@ remove_link() {
 
 remove_link "$here/bin/polytoken-herdr" "$HOME/.local/bin/polytoken-herdr"
 remove_link "$here/skill/polytoken-herdr" "$skills/polytoken-herdr"
+remove_link "$here/mods/polytoken" "${HERDR_APP_HOME:-$HOME/.config/herdr-app}/mods/polytoken"
 
 "$python" "$here/polytoken_herdr/entry.py" remove-app --home "${HERDR_APP_HOME:-$HOME/.config/herdr-app}"
 "$python" "$here/polytoken_herdr/entry.py" remove --global

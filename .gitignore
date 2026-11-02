@@ -11,3 +11,5 @@ dist/
 target/
 .engram/
 HANDOFF.md
+mods/polytoken/gpui-kit.d.ts
+mods/polytoken/jsconfig.json

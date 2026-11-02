@@ -16,14 +16,15 @@ git clone https://github.com/sjennings/polytoken-herdr-core
 cd polytoken-herdr-core && ./install.sh
 ```
 
-It installs four things and is safe to rerun:
+It installs five things and is safe to rerun:
 
 - `bin/polytoken-herdr` into `~/.local/bin`, so `polytoken-herdr run --global` and the other adapter commands work from any directory.
 - The agent skill in `skill/polytoken-herdr` into `~/.claude/skills`, so agents know the commands.
+- The `polytoken` mod in `mods/polytoken` into the app's `mods/` folder, checked with `herdr-app check`.
 - The `polytoken` entry in the Herdr app's `programs.json` (other entries preserved) and the icon copied into the app home, so Polytoken appears in the agent menu.
 - The global status hooks, as `prepare --global` installs them.
 
-`./uninstall.sh` reverses all four; run it from this checkout before
+`./uninstall.sh` reverses all five; run it from this checkout before
 deleting the checkout. If you move the checkout, rerun `./install.sh`; when
 `prepare --global` reports a conflict with stale hooks from the old
 location, run `polytoken-herdr remove --global` once and rerun the
@@ -31,10 +32,28 @@ installer. An existing manual `programs.json` entry keeps working; rerunning
 `install.sh` replaces it with the launcher form and saves the previous file
 as `programs.json.herdr-backup`.
 
-There is no Herdr mod in this plugin. The app's built-in agents list
-already shows every session reporting a status over OSC 7501, which is what
-this adapter provides, and the agent-menu entry comes from `programs.json`.
-A mod would duplicate both.
+## The Polytoken pane
+
+The mod adds one pane for the plugin's own work, not a second agent list
+(the app's sidebar already shows every session's status). Open it as a tab
+or a split:
+
+```sh
+herdr-app do tab.new --name Polytoken --mod polytoken
+herdr-app do pane.split --direction right --mod polytoken
+```
+
+- **Start a session**: type an optional model name, then **New tab** or
+  **Split right**. The pane launches the adapter's `run --global` mode, so
+  the session reports `working` / `idle` / `blocked` like any Herdr agent.
+- **Running sessions**: every live Polytoken session with its status color;
+  click one to focus it.
+- **Setup check**: when the launcher, the app-menu entry or the global
+  hooks are missing, the pane says what is missing and shows the one
+  `install.sh` command that fixes it. It only reads; it never installs or
+  repairs anything itself.
+
+`RECIPE.md` describes the pane for herdr.dev/mods; `preview.png` shows it.
 
 ## How to use Polytoken with the Herdr app
 

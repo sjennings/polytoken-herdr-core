@@ -21,6 +21,14 @@ mkdir -p "$skills"
 ln -sfn "$here/skill/polytoken-herdr" "$skills/polytoken-herdr"
 echo "linked $skills/polytoken-herdr -> $here/skill/polytoken-herdr"
 
+mkdir -p "$herdr_home/mods"
+ln -sfn "$here/mods/polytoken" "$herdr_home/mods/polytoken"
+echo "linked $herdr_home/mods/polytoken -> $here/mods/polytoken"
+
+if command -v herdr-app >/dev/null 2>&1; then
+  herdr-app check "$herdr_home/mods/polytoken"
+fi
+
 "$python" "$here/polytoken_herdr/entry.py" install-app --home "$herdr_home"
 
 if ! "$python" "$here/polytoken_herdr/entry.py" prepare --global; then
@@ -30,3 +38,4 @@ if ! "$python" "$here/polytoken_herdr/entry.py" prepare --global; then
 fi
 
 echo "Start Polytoken from the Herdr app's agent menu, or run: polytoken-herdr run --global"
+echo "Open the plugin pane with: herdr-app do tab.new --name Polytoken --mod polytoken"

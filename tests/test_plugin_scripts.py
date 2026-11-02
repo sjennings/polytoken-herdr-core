@@ -53,6 +53,8 @@ class PluginScriptTests(unittest.TestCase):
             self.assertEqual(os.readlink(launcher), str(ROOT / "bin" / "polytoken-herdr"))
             self.assertEqual(os.readlink(home / ".claude" / "skills" / "polytoken-herdr"),
                              str(ROOT / "skill" / "polytoken-herdr"))
+            self.assertEqual(os.readlink(home / "herdr-app" / "mods" / "polytoken"),
+                             str(ROOT / "mods" / "polytoken"))
             self.assertEqual(self.programs(home)["other"], {"name": "Other"})
             self.assertEqual(self.programs(home)["polytoken"]["run"][0], str(launcher))
             icon = home / "herdr-app" / appconfig.ICON_RELPATH
@@ -72,6 +74,7 @@ class PluginScriptTests(unittest.TestCase):
                            check=True, capture_output=True, text=True)
             self.assertFalse(launcher.exists())
             self.assertFalse((home / ".claude" / "skills" / "polytoken-herdr").exists())
+            self.assertFalse((home / "herdr-app" / "mods" / "polytoken").exists())
             self.assertEqual(self.programs(home), {"other": {"name": "Other"}})
             self.assertFalse(icon.exists())
             self.assertEqual(self.hook_names(home), {"other"})
