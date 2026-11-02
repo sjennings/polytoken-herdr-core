@@ -16,6 +16,19 @@ A mutation of the closed-question guard caused tests to fail. The restored guard
 passed. The repeated-question provider regression also failed before its fix.
 `git diff --check` passed for tracked changes; this does not lint untracked files.
 
+### 2026-11-02: Herdr app plugin packaging
+
+`python3 -m unittest discover -s tests` ran 92 tests and passed (OK) on the
+plugin branch after the review fixes. The new coverage includes
+`polytoken-herdr remove --global` (only adapter entries removed, stale
+entries from a moved checkout removed, no file created when nothing was
+installed, reinstall afterwards), repeated install/remove cycles that keep the
+first `hooks.json.herdr-backup`, `install-app`/`remove-app` for the Herdr
+`programs.json` entry, and an `install.sh`/`uninstall.sh` round trip. These are
+unit tests in isolated temporary homes. No human or stock-daemon runtime check
+was repeated for this change. The 2026-10-31 record above remains the history
+for the earlier 77-test run.
+
 ## Runtime evidence
 
 Tested versions: Polytoken 0.9.4 and hc 0.1.15 on macOS.
