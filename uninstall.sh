@@ -4,7 +4,7 @@
 # from this checkout before deleting the checkout.
 #
 # Honors the same overrides as install.sh (HERDR_APP_HOME,
-# XDG_CONFIG_HOME, HOME, POLYTOKEN_HERDR_PYTHON).
+# XDG_CONFIG_HOME, HOME, POLYTOKEN_HERDR_SKILLS, POLYTOKEN_HERDR_PYTHON).
 set -eu
 here=$(cd "$(dirname "$0")" && pwd -P)
 python=${POLYTOKEN_HERDR_PYTHON:-python3}

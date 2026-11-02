@@ -4,8 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .config import prepare, prepare_global, remove_global, global_directory
 from .appconfig import app_home, default_launcher, install_app, remove_app
+from .config import global_directory, prepare, prepare_global, remove_global
 from .launcher import launch_command, run
 
 

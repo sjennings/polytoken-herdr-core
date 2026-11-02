@@ -5,7 +5,8 @@
 #
 # Overrides (mainly for tests): HERDR_APP_HOME selects the app home,
 # XDG_CONFIG_HOME relocates the global hooks, HOME relocates the bin and
-# skill links, POLYTOKEN_HERDR_PYTHON picks the interpreter.
+# skill links, POLYTOKEN_HERDR_SKILLS relocates the skill link,
+# POLYTOKEN_HERDR_PYTHON picks the interpreter.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd -P)
 python=${POLYTOKEN_HERDR_PYTHON:-python3}

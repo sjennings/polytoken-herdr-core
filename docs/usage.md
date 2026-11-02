@@ -63,11 +63,12 @@ configuration discovery and rejects project hooks that disable or duplicate the
 adapter entries. Outside managed launches, the hooks return without reporting
 because no private relay connection is supplied.
 
-To remove the installation, remove only the five `herdr-*` entries installed by
-this adapter from the user hooks file. Restore the backup only if you have made
-no subsequent changes to that file. Restart or reload Polytoken for hook changes
-to take effect. Global hook discovery passed an isolated stock-daemon probe.
-The human-run global TUI probe also passed its status and termination checks;
+To remove the installation, run `python3 -m polytoken_herdr.cli remove --global`.
+It deletes only the adapter's `herdr-*` entries, including stale copies and
+string entries disabling them, and keeps every other entry. Restore the backup
+only if you have made no subsequent changes to that file. Restart or reload
+Polytoken for hook changes to take effect. Global hook discovery passed an
+isolated stock-daemon probe. The human-run global TUI probe also passed its status and termination checks;
 see the [verification record](review.md) for interaction limits.
 
 ## Observe and interact
