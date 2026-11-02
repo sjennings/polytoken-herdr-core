@@ -50,11 +50,13 @@ herdr-app do pane.split --direction right --mod polytoken
   `polytoken sessions --all`, with title, project folder and last activity,
   or "running" when the session's daemon is still up. **Tab** or **Split**
   resumes one through the adapter (`run --global --continue <id>`) from its
-  project folder; `polytoken continue` reattaches a running daemon. Status
-  reporting on resume is expected but not yet verified at runtime.
+  project folder. For a session that is not running, status reporting is
+  expected but not yet verified at runtime. A "running" session is
+  reattached by `polytoken continue`, and is not expected to report status:
+  its daemon's hooks still carry the relay of the launch that started it.
   A resumed session's daemon lives in Polytoken's own registry, and the
   adapter never reaps it: closing the tab leaves it running, detached, and
-  it stays in this list as "running" for the next resume. Polytoken does
+  it stays in this list as "running". Polytoken does
   not report whether a TUI is attached, so a running session that is open
   in another terminal is listed too; check the sidebar before resuming it.
 - **Setup check**: when the launcher, the app-menu entry or the global

@@ -42,11 +42,12 @@ One column, 12 px padding, theme `background`, all text in the UI font.
 - The resume list is read when the pane opens and on "Refresh": stored
   sessions from `polytoken sessions --all --format json`, newest first,
   leaving out subagent sessions and legacy records without metadata.
-  Running sessions stay listed: a detached daemon is resumable, and
-  `polytoken continue` reattaches it. "Tab" opens a new tab and "Split" splits the focused pane,
-  both running the launcher with `--continue <id>` from the session's
-  project folder. The resumed session is expected to report status like a
-  new one; that is not yet verified at runtime.
+  Running sessions stay listed. "Tab" opens a new tab and "Split" splits
+  the focused pane, both running the launcher with `--continue <id>` from
+  the session's project folder. A session that is not running is expected
+  to report status like a new one; that is not yet verified at runtime. A
+  running session is reattached and is not expected to report status: its
+  daemon's hooks still carry the relay of the launch that started it.
 - The setup check runs when the pane opens and when "Check again" is
   pressed. It reads; it never installs, repairs or writes anything.
 - With nothing missing, the setup card is absent.
@@ -89,8 +90,10 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   default registry and the adapter does not reap it, so closing its tab
   leaves the daemon running, detached. Polytoken reports no TUI
   attachment, so the list cannot hide a running session that is open in
-  another terminal. Whether status binds on resume (the daemon must report
-  `session_start`) is not yet runtime-tested.
+  another terminal. Whether status binds when a stopped session resumes
+  (the daemon must report `session_start`) is not yet runtime-tested; a
+  reattached running daemon is expected to report, if at all, to the relay
+  of the launch that started it, which is gone.
 - A copied (not linked) mod cannot name its checkout, so the setup card
   shows `./install.sh` with a note to run it from the checkout.
 - With `XDG_CONFIG_HOME` set, the hooks check follows it, matching the
@@ -104,8 +107,8 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   command.
 - "New tab" with a model opens a tab whose agent turns `working` during a
   model turn.
-- Not yet verified: a stored session's "Tab" button resumes it in a new
-  tab that reports status, and a closed resumed tab's session comes back
-  as "running" and reattaches.
+- Not yet verified: a stopped session's "Tab" button resumes it in a new
+  tab that reports status. A closed resumed tab's session comes back as
+  "running" and reattaches without status reporting.
 - `tests/test_plugin_scripts.py` links and unlinks the mod with the rest of
   the plugin.

@@ -128,13 +128,17 @@ is cancelled before subsequent output to avoid leaving an unfinished OSC.
 ## Resume a stored session
 
 `polytoken-herdr run --global --continue SESSION_ID` runs `polytoken continue`
-inside the wrapper, so the resumed session is expected to report status. It ignores
-`--model` and `--prompt`. Polytoken keeps history beside its default
-registry, so a resumed session uses that registry, not a private one: closing
-it leaves the daemon running, detached, and the wrapper does not reap it.
-Running `--continue` again reattaches it. Whether
-the stock daemon reports `session_start` on resume, which status binding
-needs, has not been runtime-tested.
+inside the wrapper. It ignores `--model` and `--prompt`. Polytoken keeps
+history beside its default registry, so a resumed session uses that registry,
+not a private one: closing it leaves the daemon running, detached, and the
+wrapper does not reap it.
+
+A session that was not running starts a new daemon under the wrapper, so it is
+expected to report status. Whether the stock daemon reports `session_start` on
+resume, which status binding needs, has not been runtime-tested. Running
+`--continue` on a session whose daemon is still running reattaches it, and that
+is not expected to report status: hooks run in the daemon, whose environment
+still names the relay of the launch that started it, and that relay is gone.
 
 ## Cleanup and recovery
 
