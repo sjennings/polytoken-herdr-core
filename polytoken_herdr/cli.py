@@ -2,8 +2,10 @@
 import argparse
 import subprocess
 import sys
+from pathlib import Path
 
-from .config import prepare, prepare_global, global_directory
+from .config import prepare, prepare_global, remove_global, global_directory
+from .appconfig import app_home, default_launcher, install_app, remove_app
 from .launcher import launch_command, run
 
 
@@ -14,6 +16,15 @@ def main():
     setup.add_argument("directory", nargs="?")
     setup.add_argument("--global", dest="global_config", action="store_true",
                        help="Add hooks to the user configuration, preserving existing entries")
+    teardown = commands.add_parser("remove", help="Remove this adapter's hooks from the user configuration")
+    teardown.add_argument("--global", dest="global_config", action="store_true",
+                          help="Remove the adapter's global hook entries, keeping other entries")
+    for name, help_text in (
+        ("install-app", "Add the Polytoken program entry and icon to the Herdr app home"),
+        ("remove-app", "Remove the adapter's program entry and icon from the Herdr app home"),
+    ):
+        command = commands.add_parser(name, help=help_text)
+        command.add_argument("--home", help="Herdr app home (default: $HERDR_APP_HOME or ~/.config/herdr-app)")
     for name in ("launch", "run"):
         command = commands.add_parser(name)
         location = command.add_mutually_exclusive_group(required=True)
@@ -35,6 +46,24 @@ def main():
                 if not args.directory:
                     parser.error("prepare requires a directory or --global")
                 prepare(args.directory)
+            return 0
+        if args.command == "remove":
+            if not args.global_config:
+                parser.error("remove requires --global")
+            directory = global_directory()
+            removed = remove_global(directory)
+            print(f"polytoken-herdr: removed {removed} adapter hook(s) from {directory / 'hooks.json'}"
+                  if removed else "polytoken-herdr: no adapter hooks found")
+            return 0
+        if args.command in ("install-app", "remove-app"):
+            home = Path(args.home) if args.home else app_home()
+            if args.command == "install-app":
+                changed = install_app(home, default_launcher())
+                print(f"polytoken-herdr: {'updated' if changed else 'already present'}: {home / 'programs.json'}")
+            else:
+                entry = remove_app(home)
+                print(f"polytoken-herdr: removed the Polytoken entry from {home / 'programs.json'}"
+                      if entry is not None else "polytoken-herdr: no Polytoken entry found")
             return 0
         if args.command == "launch":
             return subprocess.call(launch_command(args.name, args.cwd, args.config, args.model, args.prompt))
