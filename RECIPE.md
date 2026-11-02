@@ -59,13 +59,13 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   `pane.split --mod polytoken`), no props. `main.js` default-exports one
   `View` holding an `InputState`.
 - `herdr`: `focused()`, `home()`, `appHome()`, `knownAgents()` (the
-  app-menu `run` argv), `exec()` three ways (`sh -c` reading
+  app-menu `run` argv), `exec()` four ways (`sh -c test -x` on
+  `~/.local/bin/polytoken-herdr`; `sh -c` reading
   `${XDG_CONFIG_HOME:-$HOME/.config}/polytoken/hooks.json`; `sh -c`
   resolving the mods symlink so the install command names the checkout
   that holds `install.sh`; `polytoken sessions --all --format json`),
   `run()`, `theme()`. Commands: `tab.new {name, argv}`,
   `pane.split {direction, pane, argv}`.
-- Node built-ins: `fs/promises` (`stat` on `~/.local/bin/polytoken-herdr`).
 - Sessions launch through the `polytoken` entry the plugin's `install.sh`
   writes to `programs.json`, falling back to the linked launcher. The
   status reporting itself comes from polytoken-herdr-core's hooks, not from
@@ -76,8 +76,8 @@ One column, 12 px padding, theme `background`, all text in the UI font.
 
 - `herdr-app check` proves only the first render; the setup card's three
   states and a real launch need the live app.
-- The mod is trusted code with command access. It runs three read-only
-  commands: `sh -c cat` of the hooks file, `sh -c readlink -f` of its own
+- The mod is trusted code with command access. It runs four read-only
+  commands: `sh -c test -x` of the launcher, `sh -c cat` of the hooks file, `sh -c readlink -f` of its own
   mods entry, and `polytoken sessions --all --format json`. It reads the
   user's `programs.json` via `knownAgents()`. Resuming starts the launcher
   through `sh -c 'cd -- "$1" && shift && exec "$@"'` in the project folder.

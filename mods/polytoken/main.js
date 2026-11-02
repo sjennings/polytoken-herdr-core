@@ -1,4 +1,3 @@
-import * as fs from "fs/promises";
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { run, theme, focused, home, appHome, knownAgents, exec } from "herdr";
@@ -66,11 +65,8 @@ export default class Polytoken extends View {
   /** Read-only checks; the pane never repairs or installs anything itself. */
   async setupProblems(menuEntry) {
     const problems = [];
-    try {
-      await fs.stat(home() + LAUNCHER);
-    } catch {
-      problems.push("launcher missing from ~/.local/bin");
-    }
+    const launcher = await exec("sh", ["-c", 'test -x "$1"', "sh", home() + LAUNCHER]).catch(() => null);
+    if (!launcher || launcher.code !== 0) problems.push("launcher missing from ~/.local/bin");
     if (!menuEntry) problems.push("no polytoken entry in the Herdr app menu (programs.json)");
     let hooks = false;
     const cat = await exec("sh", ["-c", 'cat "${XDG_CONFIG_HOME:-$HOME/.config}/polytoken/hooks.json"']).catch(() => null);
