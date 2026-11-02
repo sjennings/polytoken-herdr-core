@@ -125,6 +125,16 @@ Status delivery is best effort during a stall, and reports deferred inside a
 control sequence may be coalesced to the latest snapshot. A partial failed write
 is cancelled before subsequent output to avoid leaving an unfinished OSC.
 
+## Resume a stored session
+
+`polytoken-herdr run --global --continue SESSION_ID` runs `polytoken continue`
+inside the wrapper, so the resumed session reports status. It ignores
+`--model` and `--prompt`. Polytoken keeps history beside its default
+registry, so a resumed session uses that registry, not a private one: closing
+it leaves the daemon to Polytoken, and the wrapper does not reap it. Whether
+the stock daemon reports `session_start` on resume, which status binding
+needs, has not been runtime-tested.
+
 ## Cleanup and recovery
 
 The wrapper attempts cleanup on normal exit and SIGTERM/SIGHUP. If reaping

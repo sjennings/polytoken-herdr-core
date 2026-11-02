@@ -24,7 +24,7 @@ the status. The adapter never reports `done`.
   and needs the global hooks from `polytoken-herdr prepare --global`.
 - The plugin's Herdr pane is the `polytoken` mod: open it with
   `herdr-app do tab.new --name Polytoken --mod polytoken`. It starts
-  sessions, lists running ones and shows setup problems.
+  sessions, resumes stored ones and shows setup problems.
 - Humans decide agreements, permissions, and answers to questions. Attach
   and let them answer; never send approval keys through automation and
   never bypass a blocked terminal with `hc send --force`.

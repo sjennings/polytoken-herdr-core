@@ -1,21 +1,47 @@
 import * as fs from "fs/promises";
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
-import { run, theme, agents, focused, home, appHome, knownAgents, exec } from "herdr";
+import { run, theme, focused, home, appHome, knownAgents, exec } from "herdr";
 
 const LAUNCHER = "/.local/bin/polytoken-herdr";
 const FALLBACK_ARGV = ["run", "--global"];
 const INSTALL_FALLBACK = "./install.sh (run from your polytoken-herdr-core checkout)";
+const RECENT_LIMIT = 12;
+
+const shellQuote = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
 
 /** The one command that fixes every setup problem this mod reports:
  *  install.sh in the checkout this mod is linked from. The link lives in the
  *  app's config dir, so resolve it before deriving the checkout. */
 async function installCommand() {
   const sh = await exec("sh", ["-c",
-    'p=$(readlink -f "$1") && case "$p" in */mods/polytoken) dirname "$(dirname "$p")";; esac',
+    'p=$(readlink -f "$1") && case "$p" in */mods/polytoken) d=$(dirname "$(dirname "$p")") && [ -f "$d/install.sh" ] && printf %s "$d";; esac',
     "sh", appHome() + "/mods/polytoken"]).catch(() => null);
   const checkout = sh && sh.code === 0 ? (sh.stdout || "").trim() : "";
-  return checkout ? `cd ${checkout} && ./install.sh` : INSTALL_FALLBACK;
+  return checkout ? `cd ${shellQuote(checkout)} && ./install.sh` : INSTALL_FALLBACK;
+}
+
+/** Stored sessions that are not running, newest first; null when Polytoken
+ *  cannot list them. Subagent and legacy records are left out. */
+async function recentSessions() {
+  const out = await exec("polytoken", ["sessions", "--all", "--format", "json"]).catch(() => null);
+  if (!out || out.code !== 0) return null;
+  let list;
+  try { list = JSON.parse(out.stdout); } catch { return null; }
+  if (!Array.isArray(list)) return null;
+  return list
+    .filter((s) => s && typeof s.session_id === "string" && !s.is_live
+      && s.parent_session_id?.kind === "standalone")
+    .sort((a, b) => String(b.last_activity_at ?? "").localeCompare(String(a.last_activity_at ?? "")))
+    .slice(0, RECENT_LIMIT);
+}
+
+function ago(stamp) {
+  const minutes = Math.floor((Date.now() - Date.parse(`${String(stamp).slice(0, 19)}Z`)) / 60000);
+  if (!Number.isFinite(minutes)) return "";
+  if (minutes < 60) return `${Math.max(minutes, 0)}m ago`;
+  if (minutes < 60 * 24) return `${Math.floor(minutes / 60)}h ago`;
+  return `${Math.floor(minutes / (60 * 24))}d ago`;
 }
 
 export default class Polytoken extends View {
@@ -25,6 +51,8 @@ export default class Polytoken extends View {
     this.menuArgv = null;
     this.problems = null;
     this.installCmd = "";
+    this.recent = undefined;
+    this.refresh(cx);
     cx.spawn(async (cx) => {
       this.installCmd = await installCommand();
       const known = await knownAgents().catch(() => []);
@@ -64,14 +92,38 @@ export default class Polytoken extends View {
     });
   }
 
-  launch(where, cx) {
-    const base = this.menuArgv ?? [home() + LAUNCHER, ...FALLBACK_ARGV];
-    const argv = [...base];
-    const model = this.model.value().trim();
-    if (model) argv.push("--model", model);
+  refresh(cx) {
+    cx.spawn(async (cx) => {
+      this.recent = await recentSessions();
+      cx.notify();
+    });
+  }
+
+  launcherArgv() {
+    return [...(this.menuArgv ?? [home() + LAUNCHER, ...FALLBACK_ARGV])];
+  }
+
+  open(where, argv) {
     const pane = focused()?.pane;
     if (where === "split" && pane) run("pane.split", { direction: "right", pane, argv });
     else run("tab.new", { name: "Polytoken", argv });
+  }
+
+  launch(where, _cx) {
+    const argv = this.launcherArgv();
+    const model = this.model.value().trim();
+    if (model) argv.push("--model", model);
+    this.open(where, argv);
+  }
+
+  /** Resumes through the launcher so status reporting stays on, from the
+   *  session's own project folder when Polytoken recorded one. */
+  resume(session, where) {
+    const argv = [...this.launcherArgv(), "--continue", session.session_id];
+    const folder = session.project_path;
+    this.open(where, typeof folder === "string" && folder
+      ? ["sh", "-c", 'cd -- "$1" && shift && exec "$@"', "sh", folder, ...argv]
+      : argv);
   }
 
   button(t, id, label, onClick, { primary = false, disabled = false } = {}) {
@@ -96,20 +148,32 @@ export default class Polytoken extends View {
   }
 
   sessions(t) {
-    const live = agents().filter((a) => a.app === "polytoken");
-    const dot = (a) => div().size(8).flex_none().rounded(4).bg(t[a.status] ?? t.dim);
-    const row = (a) => h_flex().id(`s-${a.address}`).gap(8).px(8).h(30).items_center().rounded(6)
-      .cursor_pointer().hover((s) => s.bg(t.hover))
-      .on_click(() => run("agent.focus", { terminal: a.address }))
-      .child(dot(a))
-      .child(div().flex_1().min_w(0).truncate().text_size(12.5).text_color(t.foreground)
-        .child(a.title || a.tab_name || a.address))
-      .child(div().flex_none().text_size(11.5).text_color(t.dim).child(a.space_name || ""));
-    if (live.length === 0) {
-      return div().px(8).py(6).text_size(12).text_color(t.muted)
-        .child("No Polytoken sessions are running. Start one above.");
+    if (this.recent === undefined) {
+      return div().px(8).py(6).text_size(12).text_color(t.muted).child("Reading stored sessions...");
     }
-    return v_flex().gap(2).children(live.map(row));
+    if (this.recent === null) {
+      return div().px(8).py(6).text_size(12).text_color(t.muted)
+        .child("Polytoken could not list stored sessions (polytoken sessions --all).");
+    }
+    if (this.recent.length === 0) {
+      return div().px(8).py(6).text_size(12).text_color(t.muted)
+        .child("No stored Polytoken sessions to resume.");
+    }
+    const small = (id, label, onClick) => div().id(id).flex_none().h(22).px(8).flex().items_center()
+      .rounded(5).text_size(11.5).border_1().border_color(t.border).bg(t.surface)
+      .cursor_pointer().hover((s) => s.bg(t.hover)).on_click(onClick).child(label);
+    const row = (s) => {
+      const folder = typeof s.project_path === "string" ? s.project_path.split("/").filter(Boolean).pop() ?? "" : "";
+      const detail = [folder, ago(s.last_activity_at)].filter(Boolean).join(" · ");
+      return h_flex().id(`r-${s.session_id}`).gap(8).px(8).h(30).items_center().rounded(6)
+        .hover((st) => st.bg(t.hover))
+        .child(div().flex_1().min_w(0).truncate().text_size(12.5).text_color(t.foreground)
+          .child(s.effective_title || s.last_user_message_preview || s.session_id))
+        .child(div().flex_none().text_size(11.5).text_color(t.dim).child(detail))
+        .child(small(`rt-${s.session_id}`, "Tab", () => this.resume(s, "tab")))
+        .child(small(`rs-${s.session_id}`, "Split", () => this.resume(s, "split")));
+    };
+    return v_flex().gap(2).children(this.recent.map(row));
   }
 
   render(_cx) {
@@ -128,7 +192,9 @@ export default class Polytoken extends View {
           .child(this.button(t, "new-tab", "New tab", (cx) => this.launch("tab", cx), { primary: true }))
           .child(this.button(t, "split", "Split right", (cx) => this.launch("split", cx)))))
       .child(v_flex().gap(6)
-        .child(div().text_size(11.5).text_color(t.dim).child("Running sessions"))
+        .child(h_flex().gap(8).items_center()
+          .child(div().flex_1().text_size(11.5).text_color(t.dim).child("Resume a recent session"))
+          .child(this.button(t, "refresh", "Refresh", (cx) => this.refresh(cx))))
         .child(this.sessions(t)));
   }
 }

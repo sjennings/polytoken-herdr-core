@@ -35,6 +35,9 @@ def main():
         if name == "launch":
             command.add_argument("--name", required=True)
             command.add_argument("--cwd", default=".")
+        else:
+            command.add_argument("--continue", dest="resume", metavar="SESSION_ID",
+                                 help="Resume a stored Polytoken session; --model and --prompt are ignored")
     args = parser.parse_args()
     try:
         if args.command == "prepare":
@@ -67,7 +70,7 @@ def main():
             return 0
         if args.command == "launch":
             return subprocess.call(launch_command(args.name, args.cwd, args.config, args.model, args.prompt))
-        return run(args.config, args.model, args.prompt)
+        return run(args.config, args.model, args.prompt, args.resume)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"polytoken-herdr: {error}", file=sys.stderr)
         return 1

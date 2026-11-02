@@ -46,8 +46,11 @@ herdr-app do pane.split --direction right --mod polytoken
 - **Start a session**: type an optional model name, then **New tab** or
   **Split right**. The pane launches the adapter's `run --global` mode, so
   the session reports `working` / `idle` / `blocked` like any Herdr agent.
-- **Running sessions**: every live Polytoken session with its status color;
-  click one to focus it.
+- **Resume a recent session**: the newest stored sessions from
+  `polytoken sessions --all` that are not running, with title, project
+  folder and last activity. **Tab** or **Split** resumes one through the
+  adapter (`run --global --continue <id>`) from its project folder, so it
+  reports status too. Running sessions stay in the app's sidebar.
 - **Setup check**: when the launcher, the app-menu entry or the global
   hooks are missing, the pane says what is missing and shows the one
   `install.sh` command that fixes it. It only reads; it never installs or

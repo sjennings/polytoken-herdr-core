@@ -30,3 +30,7 @@ class LauncherTests(unittest.TestCase):
         self.assertNotIn("--no-attach", command)
         self.assertNotIn("--accept-license-terms", command)
         self.assertEqual(command[-2:], ["--prompt", "hello"])
+
+    def test_resume_continues_from_polytoken_history_with_id_as_operand(self):
+        command = polytoken_command(None, "/private/sessions", "model", "hello", "-not-an-option")
+        self.assertEqual(command, ["polytoken", "continue", "--", "-not-an-option"])
