@@ -57,9 +57,10 @@ def prepare_global(path):
     missing = [entry for entry in hooks() if entry["name"] not in seen]
     if not missing:
         return
-    # Refuse to overwrite an earlier recovery copy.
-    if original is not None:
-        with (path / "hooks.json.herdr-backup").open("xb") as backup:
+    # Keep the earliest recovery copy; entries are only ever appended.
+    backup_path = path / "hooks.json.herdr-backup"
+    if original is not None and not (backup_path.exists() or backup_path.is_symlink()):
+        with backup_path.open("xb") as backup:
             os.chmod(backup.name, 0o600)
             backup.write(original)
     fd, temporary = tempfile.mkstemp(prefix=".herdr-hooks-", dir=path)

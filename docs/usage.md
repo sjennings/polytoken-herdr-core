@@ -54,7 +54,7 @@ OSC cannot interrupt a partially written control sequence. No shell interprets t
 Use `python3 -m polytoken_herdr.cli prepare --global` to add the hooks to
 `$XDG_CONFIG_HOME/polytoken/hooks.json` (default `~/.config/polytoken/hooks.json`).
 Existing entries are preserved. Before changing an existing file, the installer
-saves `hooks.json.herdr-backup`; it refuses to overwrite an earlier backup.
+saves `hooks.json.herdr-backup`; an earlier backup is kept, never overwritten.
 Matching adapter hooks are left unchanged, while conflicting names or malformed
 entries stop installation. Close other configuration editors during installation.
 

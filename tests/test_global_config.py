@@ -110,3 +110,15 @@ class GlobalConfigTests(unittest.TestCase):
             config.remove_global(path)
             config.prepare_global(path)
             config.validate_global(path)
+
+    def test_repeated_install_and_remove_cycles_keep_the_first_backup(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root)
+            original = '[{"name":"other","event":"stop","handler":{"bash":"true"}}]\n'
+            (path / "hooks.json").write_text(original)
+            for _ in range(3):
+                config.prepare_global(path)
+                config.validate_global(path)
+                self.assertEqual(config.remove_global(path), len(config.hooks()))
+            self.assertEqual(json.loads((path / "hooks.json").read_text()), json.loads(original))
+            self.assertEqual((path / "hooks.json.herdr-backup").read_text(), original)
