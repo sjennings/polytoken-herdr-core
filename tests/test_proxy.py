@@ -167,7 +167,15 @@ class ProxyTests(unittest.TestCase):
         final = b"FINAL\x1b[?25h\x1b[?1049l"
         child = "import os; os.write(1," + repr(final) + "); os._exit(0)"
         self.assertEqual(run_proxy([sys.executable, "-c", child], dict(os.environ), SerializedOutput(sink), input_fd=None), 0)
-        self.assertTrue(sink.getvalue().endswith(final), sink.getvalue())
+        self.assertTrue(sink.getvalue().endswith(final + b"\x1b]7501;state=clear\x1b\\"), sink.getvalue())
+
+    def test_child_exiting_without_release_still_clears_status(self):
+        sink = io.BytesIO()
+        working = b"\x1b]7501;state=working:app=polytoken\x1b\\"
+        child = "import os; os.write(1," + repr(working) + "); os._exit(3)"
+        self.assertEqual(run_proxy([sys.executable, "-c", child], dict(os.environ), SerializedOutput(sink), input_fd=None), 3)
+        self.assertIn(working, sink.getvalue())
+        self.assertTrue(sink.getvalue().endswith(b"\x1b]7501;state=clear\x1b\\"), sink.getvalue())
 
     def test_missed_readiness_still_preserves_final_output(self):
         import select

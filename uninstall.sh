@@ -1,6 +1,6 @@
 #!/bin/sh
 # Remove what install.sh added: the launcher and skill links, the Herdr
-# program entry and icon, and this adapter's global status hooks. Run it
+# program entry and icon, and obsolete adapter global hooks. Run it
 # from this checkout before deleting the checkout.
 #
 # Honors the same overrides as install.sh (HERDR_APP_HOME,

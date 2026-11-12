@@ -3,7 +3,7 @@
 #
 #   polytoken-herdr run --global              run Polytoken here, status reported
 #   polytoken-herdr launch --global --name w  start a hidden hc-managed session
-#   polytoken-herdr prepare --global          install the global status hooks
+#   polytoken-herdr prepare --global          remove obsolete global status hooks
 #
 # POLYTOKEN_HERDR_PYTHON overrides the interpreter (default: python3 on PATH).
 set -eu

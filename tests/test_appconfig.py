@@ -57,6 +57,24 @@ class AppInstallTests(unittest.TestCase):
             document = json.loads((home / "programs.json").read_text())
             self.assertNotEqual(document["programs"]["polytoken"]["name"], "Custom")
 
+    def test_reinstall_preserves_custom_fields_aliases_and_original_backup(self):
+        with tempfile.TemporaryDirectory() as root:
+            home = Path(root) / "herdr-app"
+            home.mkdir()
+            launcher = Path(root) / "polytoken-herdr"
+            launcher.touch()
+            original = {"programs": {"polytoken": {"name": "Custom", "run": ["old"],
+                        "match": ["custom-wrapper", "second-wrapper"], "extension": "keep"}}}
+            (home / "programs.json").write_text(json.dumps(original))
+            (home / appconfig.BACKUP_NAME).write_text("old backup")
+            appconfig.install_app(home, launcher)
+            entry = json.loads((home / "programs.json").read_text())["programs"]["polytoken"]
+            self.assertEqual(entry["extension"], "keep")
+            self.assertEqual(entry["match"], ["custom-wrapper", "second-wrapper"])
+            self.assertEqual(entry["run"], [str(launcher), "run", "--global"])
+            self.assertEqual((home / appconfig.BACKUP_NAME).read_text(), "old backup")
+            self.assertFalse(appconfig.install_app(home, launcher))
+
     def test_invalid_json_preserves_file(self):
         with tempfile.TemporaryDirectory() as root:
             home = Path(root) / "herdr-app"

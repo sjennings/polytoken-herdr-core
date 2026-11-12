@@ -7,15 +7,24 @@ from pathlib import Path
 from .appconfig import app_home, default_launcher, install_app, remove_app
 from .config import global_directory, prepare, prepare_global, remove_global
 from .launcher import launch_command, run
+from .reporter import callback, restore_labels
 
 
 def main():
+    if sys.argv[1:2] == ["hook"]:
+        return 0
+    if sys.argv[1:2] == ["pane"]:
+        try:
+            return callback(sys.argv[2:])
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+            print(f"polytoken-herdr callback: {error}", file=sys.stderr)
+            return 1
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    setup = commands.add_parser("prepare", help="Create hooks in a NEW dedicated config directory")
+    setup = commands.add_parser("prepare", help="Create a config directory or remove obsolete project hooks")
     setup.add_argument("directory", nargs="?")
     setup.add_argument("--global", dest="global_config", action="store_true",
-                       help="Add hooks to the user configuration, preserving existing entries")
+                       help="Remove obsolete global adapter hooks, preserving other entries")
     teardown = commands.add_parser("remove", help="Remove this adapter's hooks from the user configuration")
     teardown.add_argument("--global", dest="global_config", action="store_true",
                           help="Remove the adapter's global hook entries, keeping other entries")
@@ -25,6 +34,7 @@ def main():
     ):
         command = commands.add_parser(name, help=help_text)
         command.add_argument("--home", help="Herdr app home (default: $HERDR_APP_HOME or ~/.config/herdr-app)")
+    commands.add_parser("restore", help="Resume the session recorded on this hc terminal")
     for name in ("launch", "run"):
         command = commands.add_parser(name)
         location = command.add_mutually_exclusive_group(required=True)
@@ -36,6 +46,7 @@ def main():
             command.add_argument("--name", required=True)
             command.add_argument("--cwd", default=".")
         else:
+            command.add_argument("--sessions-dir", help="Use a caller-owned native registry; it will not be reaped")
             command.add_argument("--continue", dest="resume", metavar="SESSION_ID",
                                  help="Resume a stored Polytoken session; --model and --prompt are ignored")
     args = parser.parse_args()
@@ -68,9 +79,12 @@ def main():
                 print(f"polytoken-herdr: removed the Polytoken entry from {home / 'programs.json'}"
                       if entry is not None else "polytoken-herdr: no Polytoken entry found")
             return 0
+        if args.command == "restore":
+            identifier, sessions = restore_labels()
+            return run(None, None, None, identifier, sessions)
         if args.command == "launch":
             return subprocess.call(launch_command(args.name, args.cwd, args.config, args.model, args.prompt))
-        return run(args.config, args.model, args.prompt, args.resume)
+        return run(args.config, args.model, args.prompt, args.resume, args.sessions_dir)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"polytoken-herdr: {error}", file=sys.stderr)
         return 1

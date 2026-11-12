@@ -1,190 +1,96 @@
 # Setup and use (experimental)
 
-This adapter is experimental. Human-run tests confirmed startup, follow-up input,
-and terminal shutdown with stock Polytoken. Some permission and cleanup paths
-remain unverified. Do not rely on status as an authorization gate or as proof of
-task completion.
+Use Python 3.10+ on Unix, stock Polytoken and herdr-core (`hc`). The adapter uses only the Python standard library. Current local checks use Polytoken 0.9.7 and hc 0.1.20 on macOS. The operator decided the first-run agreement in a dedicated scratch profile; native start, release, restore and blocked-input checks then passed without further dialog responses. See [the verification record](review.md).
 
-## Requirements
+## Installation and migration
 
-- macOS or Linux with Unix sockets; Windows is not supported.
-- Python 3.10+ using only the standard library.
-- `hc` and `polytoken` on PATH. Development probes used hc 0.1.15 and
-  Polytoken 0.9.4.
-- A working Polytoken provider configuration, configured by the user.
+Run `./install.sh` from the checkout. It links the launcher, skill and mod, installs the menu entry and icon, and removes the old adapter's global hooks. `./uninstall.sh` unlinks this checkout and removes its menu entry, icon and obsolete hooks. Tests run both scripts in temporary homes.
 
-From this checkout, prepare a NEW `.polytoken` directory in the target project.
-On tested Polytoken 0.9.4, `--config-dir` loads model configuration but did not
-redirect hook discovery in our runtime probe. The launcher therefore requires
-`--config` to resolve to `<cwd>/.polytoken`. Existing directories are refused;
-use a separate scratch project for evaluation rather than overwriting them.
+The global hook location is `$XDG_CONFIG_HOME/polytoken/hooks.json`, defaulting to `~/.config/polytoken/hooks.json`. Migration removes these exact names, regardless of their old handler path, plus string entries disabling them:
 
-Prepare:
+- `herdr-session_start`
+- `herdr-pre_model_turn`
+- `herdr-stop`
+- `herdr-interrogative_wants_open`
+- `herdr-interrogative_has_closed`
+
+Other entries are preserved. The original file is saved as `hooks.json.herdr-backup` if no earlier backup exists. Malformed JSON and symlinked hook files are refused. Close configuration editors while migrating. Already-running Polytoken daemons may retain old hooks until restarted; the installer does not drive those sessions. Unmigrated entries call `polytoken-herdr hook`, which now does nothing and exits 0.
+
+`polytoken-herdr prepare --global` and `remove --global` both perform that cleanup. They install no new hooks. `prepare DIRECTORY` creates the directory if needed and migrates any old adapter hooks there, preserving provider configuration. `--config DIRECTORY` passes the directory to Polytoken; status no longer depends on Polytoken's project hook-discovery rules. `--global` uses native configuration discovery.
+
+Installer reruns update the owned menu fields and launch command while preserving other program entries, unknown fields and existing match aliases. They retain the first `programs.json.herdr-backup`.
+
+## Launch and interact
+
+In a Herdr app pane or another hc terminal:
 
 ```sh
-python3 -m polytoken_herdr.cli prepare /absolute/project/path/.polytoken
+polytoken-herdr run --global
+polytoken-herdr run --global --model YOUR_MODEL --prompt 'Inspect the project.'
 ```
 
-The command refuses an existing directory. It writes only `hooks.json`; it does
-not copy credentials or alter global/project hooks. Generated hooks reference
-this checkout and Python interpreter by absolute path. Keep both in place, or
-prepare a new directory after moving them. Add provider/model configuration to
-that directory if needed. Normal Polytoken global configuration may still be
-inherited: this directory is not a security sandbox and does not disable global
-hooks or global permission rules.
+The shell alias `polytoken='polytoken-herdr run --global'` continues to work. Outside hc, `run` launches native Polytoken with the requested configuration, model and prompt, without adding reporter variables or a private registry.
 
-Launch a new session:
+For direct herdr-core users, launch a separate terminal:
 
 ```sh
-python3 -m polytoken_herdr.cli launch \
-  --name worker --cwd /absolute/project/path \
-  --config /absolute/project/path/.polytoken \
-  --model YOUR_MODEL --prompt 'Inspect the project and summarize its structure.'
-```
-
-This starts an hc-managed terminal containing the adapter wrapper and the stock
-Polytoken TUI. The initial prompt is supplied with Polytoken's `--prompt`; it is
-not typed into a possibly unready terminal. The wrapper creates a private
-session registry and relay. Polytoken runs on a private PTY; the wrapper forwards
-input and resize events and serializes TUI bytes with hook status reports so
-OSC cannot interrupt a partially written control sequence. No shell interprets the prompt as a command.
-
-## Global installation
-
-Use `python3 -m polytoken_herdr.cli prepare --global` to add the hooks to
-`$XDG_CONFIG_HOME/polytoken/hooks.json` (default `~/.config/polytoken/hooks.json`).
-Existing entries are preserved. Before changing an existing file, the installer
-saves `hooks.json.herdr-backup`; an earlier backup is kept, never overwritten.
-Matching adapter hooks are left unchanged, while conflicting names or malformed
-entries stop installation. Close other configuration editors during installation.
-
-Launch with `--global` instead of `--config`. The launcher uses normal Polytoken
-configuration discovery and rejects project hooks that disable or duplicate the
-adapter entries. Outside managed launches, the hooks return without reporting
-because no private relay connection is supplied.
-
-To remove the installation, run `python3 -m polytoken_herdr.cli remove --global`.
-It deletes only the adapter's `herdr-*` entries, including stale copies and
-string entries disabling them, and keeps every other entry. Restore the backup
-only if you have made no subsequent changes to that file. Restart or reload
-Polytoken for hook changes to take effect. Global hook discovery passed an
-isolated stock-daemon probe. The human-run global TUI probe also passed its status and termination checks;
-see the [verification record](review.md) for interaction limits.
-
-## Observe and interact
-
-```sh
-hc get worker
-hc read worker
-hc wait worker
+polytoken-herdr launch --global --name worker --cwd /absolute/project \
+  --model YOUR_MODEL --prompt 'Inspect the project.'
 hc attach worker
 ```
 
-Use `hc attach` to handle first-start legal acceptance, permission dialogs,
-authentication, and questions yourself. Ctrl+\\ detaches the hc viewer without
-ending the wrapper or Polytoken TUI. Do not use Polytoken's own detach/reattach
-commands to move this managed session to another terminal: that is unsupported.
-Closing its TUI ends the managed session and triggers private-registry cleanup.
-The temporary registry is not durable session history.
-
-Ordinary follow-up input uses `hc send worker 'Your next task'` only after the
-human has completed startup and the session is ready. The human-run probe verified
-`hc send --if idle --wait` returning idle on a new turn. Never send approval keys or
-use `hc send --force` to get around a blocked permission/question. If a send
-fails, inspect before retrying; do not assume it was undelivered.
-
-Polytoken can run ordinary `hc` commands via its shell tool using the installed
-herdr-core skill. Child work should follow that skill's ownership and cleanup
-rules. This adapter neither adds privileged tools nor overrides permissions.
+The Herdr app invokes terminal controls automatically. When using hc directly, Ctrl+\\ detaches its viewer; `hc get worker` reads status and `hc send worker 'Next task' --if idle --wait` sends ordinary work. `hc kill worker` and `hc rm worker` finish it. Inspect a failed send before retrying. Humans handle agreements, authentication, permissions and questions; never send approval keys or force a blocked send.
 
 ## Status meaning and limitations
 
-- `idle`: session-start hook or model handback requested. Not proof of success,
-  readiness for input, or absence of later work.
-- `working`: a model turn is starting.
-- `blocked`: at least one reported human prompt has not closed.
-- `error`: the relay's retained human-prompt history reached its 4,096-ID limit;
-  start a new managed session after handling pending work.
-- No status: startup has not reported, the terminal finished, or reporting is
-  unavailable. Do not infer a status from screen contents.
+[Polytoken's reporter](https://docs.polytoken.dev/using-polytoken/tui-orchestrators/) decides status:
 
-The adapter never emits `done`. Other hooks can continue a turn after `stop`.
-Interrogative hooks are asynchronous, so status may lag. Delivery failures are
-best effort: the hook never denies a tool or changes an approval decision just
-because status reporting failed. Polytoken cancellation and subagent prompt
-payloads still need runtime validation. A child sharing the user's environment
-can read relay credentials; this protects against accidental cross-session
-routing, not malicious code running as the same OS user.
+| State | Meaning |
+| --- | --- |
+| `working` | A turn or background work is pending/running; services are excluded. |
+| `idle` | No turn or background work is pending. This does not establish success. |
+| `blocked` | A human decision is pending, including questions, permissions, goals or plan review. |
+| No status | Release cleared status, startup has not reported, or reporting is unavailable. |
 
-### Output stalls
+The adapter never emits `done`. It sets `HERDR_ENV=1`, `HERDR_PANE_ID` to the hc terminal ID and `HERDR_BIN_PATH` to this checkout's executable launcher. The callback marker binds reports to that terminal. These variables also activate Polytoken's legacy Herdr detection, including its bundled skill and keyboard mode; they do not emulate the older Herdr CLI. Use hc's own skill for terminal management.
 
-The wrapper serializes TUI output and status. Status-only writes have a 0.2-second
-deadline; bulk TUI writes have a five-second deadline. A longer terminal stall
-ends the managed session through cleanup rather than hanging indefinitely.
-Status delivery is best effort during a stall, and reports deferred inside a
-control sequence may be coalesced to the latest snapshot. A partial failed write
-is cancelled before subsequent output to avoid leaving an unfinished OSC.
+Callbacks reopen `/dev/tty`, because their standard streams may be null. The private PTY proxy extracts only the four fixed callback OSC sequences and serializes them with TUI output at complete control-sequence and UTF-8 boundaries. A direct-write probe reproduced split-CSI corruption without this proxy. Unknown output remains TUI output; no screen text is used to infer status. Model/facet metadata is ignored because OSC 7501 has no equivalent fields.
 
-## Resume a stored session
+This removes the old hook-event reduction, hook discovery dependency and relay socket. Reports still depend on successful callbacks and terminal output. Status-only writes have a 0.2-second deadline and bulk output has five seconds. A report arriving during an incomplete TUI sequence is deferred; pending snapshots can be coalesced. When the run ends, the adapter cancels any incomplete sequence and writes a clear itself, whether or not Polytoken's release arrived. Callback or label failures are not proof that hc observed a state. If the adapter itself is killed, the last status can remain. The adapter does not change permissions or provide a security boundary against processes running as the same OS user.
 
-`polytoken-herdr run --global --continue SESSION_ID` runs `polytoken continue`
-inside the wrapper. It ignores `--model` and `--prompt`. Polytoken keeps
-history beside its default registry, so a resumed session uses that registry,
-not a private one: closing it leaves the daemon running, detached, and the
-wrapper does not reap it.
+## Resume and restore
 
-A session that was not running starts a new daemon under the wrapper, so it is
-expected to report status. Whether the stock daemon reports `session_start` on
-resume, which status binding needs, has not been runtime-tested. Running
-`--continue` on a session whose daemon is still running reattaches it, and that
-is not expected to report status: hooks run in the daemon, whose environment
-still names the relay of the launch that started it, and that relay is gone.
+```sh
+polytoken-herdr run --global --continue SESSION_ID
+polytoken-herdr restore
+```
+
+`--continue` ignores `--model` and `--prompt` and uses native history/registry discovery. `restore` reads `polytoken.session` and `polytoken.sessions_dir` labels from the current terminal, validates the ID and directory, and resumes that session. Callback-supplied command text is never executed. IDs use ASCII letters, numbers, dot, underscore and dash, and cannot start with dash.
+
+`run --sessions-dir DIRECTORY` (also `--sessions-dir=DIRECTORY`) selects a caller-owned registry, including for restore. Its path is recorded absolutely. The adapter never reaps or deletes an explicit registry or the native registry of a resumed session. Closing a resumed TUI leaves its daemon detached. A newly attached TUI is expected to own its reporter callbacks even when the daemon already exists; that behavior passed an isolated stock-TUI check with the retained registry. A new managed session's private tree is deleted on cleanup, so its recorded label cannot restore history that has already been deleted. Native and explicit registries are retained; durable restoration of disposable managed sessions is not implemented.
 
 ## Cleanup and recovery
 
-The wrapper attempts cleanup on normal exit and SIGTERM/SIGHUP. If reaping
-fails, it retains the private registry and prints its path; inspect that exact
-registry rather than running a global reap. SIGKILL or machine loss cannot run
-cleanup. Actual hc termination behavior still needs the runtime checks in
-[review and acceptance checks](review.md). Do not treat unit tests as proof that
-no daemon can remain after a forced termination.
+A new managed session without `--sessions-dir` gets a private temporary registry. Normal exit or SIGTERM/SIGHUP attempts to reap only that registry. Reap failure retains it and reports the exact path. SIGKILL and machine loss cannot run cleanup. The proxy signals its immediate child; neither a finished hc terminal nor the disappearance of observed descendants establishes exhaustive detached-process cleanup.
 
 ## Checks
 
 ```sh
 python3 -m unittest discover -s tests -v
-python3 scripts/probe_hc.py
-python3 scripts/probe_polytoken.py
-python3 scripts/probe_polytoken.py --daemon
-python3 scripts/probe_integration.py
+python3 scripts/probe_reporter.py
+python3 scripts/probe_stock_reporter.py
 ```
 
-Without a reusable profile, each run creates a fresh HOME and may show the legal
-agreement again. For human-assisted checks, use a dedicated profile:
+The callback probe creates a private HOME, XDG directories, socket, unique HC_SESSION and terminal. It verifies working, idle, blocked, release and a deliberately split CSI using null callback streams, then removes only its own terminal/core and compares the default session's terminal identities before and after.
+
+The stock probe uses a local mock provider, disables update checks only in its scratch global config, records callback arguments, and shows any startup decision without answering it. `--interactive --question --profile DIRECTORY` lets a human perform the agreement and question checks in a new or probe-marked profile; it never supplies an answer. The probe stops its owned TUI and authenticates daemons from its private registry before requesting shutdown. A process that ignores shutdown is signalled only after its PID, start time and command are rechecked. All cleanup steps run even if an earlier step fails. It uses no forced CLI option. A failed cleanup retains its private directory for inspection. Reaching a licence agreement is an incomplete stock reporter check, not a pass. Neither probe copies acceptance records.
+
+For the human check, run one command from the checkout:
 
 ```sh
-python3 scripts/probe_integration.py --interactive \
-  --profile ~/.local/share/polytoken-herdr-test-profile
+python3 scripts/probe_stock_reporter.py --human
 ```
 
-Choose a new directory on first use. Later runs retain that profile's settings
-and any acceptance you gave there. The probe refuses existing unmarked directories;
-do not point it at your normal HOME or Polytoken configuration. Project files and
-hc runtime state remain disposable. Do not run concurrent probes with one profile.
-The probe does not copy acceptance records or accept an agreement for you.
+The first attachment asks you to decide the agreement, wait for the mock-provider OK and detach with Ctrl+\\. The probe then requests one ordinary test question from idle and attaches again. Inspect the question and detach; you may leave it unanswered. Rejecting the agreement, quitting the TUI, Ctrl+C or closing the probe triggers cleanup. A first attachment that never reaches idle is recorded as incomplete, with exit code 2.
 
-Run this in your own terminal. It attaches you directly to the disposable terminal.
-Read and decide on the agreement yourself. If you proceed, wait for the mock
-provider's OK reply, then detach with Ctrl+\\ (do not quit Polytoken). The probe
-checks structured status, sends an ordinary `Reply OK again` prompt with
-`hc send --if idle --wait`, and requires a newer turn returning to idle. It then
-terminates its own terminal and checks hc reports it finished before removing
-the test instance. That finished-state check does not prove all daemon descendants
-were reaped. No `--force` send or automatic permission answer is used. Rejecting
-or closing the session leaves validation incomplete. A human-run corrected interactive probe
-passed initial status (idle, turn 1), ordinary guarded follow-up (idle, turn 2),
-and hc termination (finished, exit 129, status cleared). Human permission paths,
-reattachment, and absence of surviving daemon descendants remain separate checks. The probe does not
-accept on your behalf. All probes use disposable state; they must never be
-pointed at the user's live registry/core. See [feasibility](feasibility.md) for
-observed evidence and unresolved verification.
+Every run prints its evidence path. Each exact HC_SESSION is recorded before a core starts in an exclusive per-session journal; later runs cannot replace it. `--capture-dir DIRECTORY` collects those journals and raw callback arguments in a chosen directory. To retain only choices you make yourself for a later run, also pass `--profile DIRECTORY`, using a new or probe-marked private directory. Use one probe at a time per profile. The older combined launcher probe is a separate check and is not needed for this one-command reporter check.

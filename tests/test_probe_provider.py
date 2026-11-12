@@ -7,7 +7,7 @@ from http.server import ThreadingHTTPServer
 from urllib.request import Request, urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from probe_polytoken import Provider
+from mock_provider import Provider
 
 
 class ProviderTests(unittest.TestCase):

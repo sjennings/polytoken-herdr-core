@@ -1,6 +1,6 @@
 #!/bin/sh
 # Install this checkout as a Herdr app plugin: launcher on PATH, agent
-# skill, Herdr program entry with icon, and global status hooks. Rerun
+# skill and Herdr program entry with icon; remove obsolete global hooks. Rerun
 # after moving the checkout. Reversible with uninstall.sh.
 #
 # Overrides (mainly for tests): HERDR_APP_HOME selects the app home,
@@ -32,7 +32,7 @@ fi
 "$python" "$here/polytoken_herdr/entry.py" install-app --home "$herdr_home"
 
 if ! "$python" "$here/polytoken_herdr/entry.py" prepare --global; then
-  echo "install.sh: status hooks not installed; see the error above." >&2
+  echo "install.sh: obsolete hook migration failed; see the error above." >&2
   echo "install.sh: after resolving it, run install.sh again." >&2
   exit 1
 fi

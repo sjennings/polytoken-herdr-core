@@ -68,14 +68,6 @@ export default class Polytoken extends View {
     const launcher = await exec("sh", ["-c", 'test -x "$1"', "sh", home() + LAUNCHER]).catch(() => null);
     if (!launcher || launcher.code !== 0) problems.push("launcher missing from ~/.local/bin");
     if (!menuEntry) problems.push("no polytoken entry in the Herdr app menu (programs.json)");
-    let hooks = false;
-    const cat = await exec("sh", ["-c", 'cat "${XDG_CONFIG_HOME:-$HOME/.config}/polytoken/hooks.json"']).catch(() => null);
-    if (cat && cat.code === 0 && cat.stdout) {
-      try {
-        hooks = JSON.parse(cat.stdout).some((e) => e && typeof e.name === "string" && e.name.startsWith("herdr-"));
-      } catch { /* unparseable hooks.json counts as not installed */ }
-    }
-    if (!hooks) problems.push("global status hooks not installed (prepare --global)");
     return problems;
   }
 
