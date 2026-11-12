@@ -14,9 +14,10 @@ from http.server import ThreadingHTTPServer
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from polytoken_herdr.config import prepare, prepare_global
 from polytoken_herdr.launcher import launch_command
-from probe_polytoken import Provider
+from mock_provider import Provider
 from probe_profile import prepare_profile
 from probe_processes import descendants, assert_exited
+from probe_reporter import unchanged_default
 
 
 def verify_followup(hc, previous_turn):
@@ -53,19 +54,21 @@ def main():
     parser.add_argument("--question", action="store_true",
                         help="After ordinary input, check a real blocked question and let the human reattach")
     parser.add_argument("--global", dest="global_config", action="store_true",
-                        help="Test user hooks inside the isolated test profile")
+                        help="Test user configuration inside the isolated test profile")
     parser.add_argument("--profile", help="Reuse a dedicated test HOME; creates a new marked directory on first use")
     args = parser.parse_args()
     if args.question and not args.interactive:
         parser.error("--question requires --interactive")
     if args.interactive and not sys.stdin.isatty():
         parser.error("--interactive requires a human terminal")
-    with tempfile.TemporaryDirectory(prefix="phi-", dir="/tmp") as directory:
+    with unchanged_default(), tempfile.TemporaryDirectory(prefix="phi-", dir="/tmp") as directory:
         root = Path(directory)
         env = {key: value for key, value in os.environ.items()
                if key in ("PATH", "LANG", "SHELL", "TMPDIR")}
         home = prepare_profile(args.profile) if args.profile else root
         env.update(HOME=str(home), TERM="xterm-256color", HC_SESSION="probe-" + uuid.uuid4().hex[:8])
+        env["HC_SOCKET"] = str(root / "core.sock")
+        owned_session = env["HC_SESSION"]
         for kind in ("CONFIG", "STATE", "DATA", "CACHE", "RUNTIME"):
             path = (root if kind == "RUNTIME" else home) / kind.lower()
             path.mkdir(mode=0o700, exist_ok=True)
@@ -77,6 +80,10 @@ def main():
         launched = False
 
         def hc(*args, check=True):
+            if not owned_session or env.get("HC_SESSION") != owned_session or owned_session == "default":
+                raise RuntimeError("lost private hc session binding")
+            if args[0] in ("kill", "rm", "send") and (not launched or len(args) < 2 or args[1] != "integration"):
+                raise RuntimeError("refusing to drive an unowned terminal")
             return subprocess.run(["hc", *args], env=env, text=True, capture_output=True,
                                   timeout=30, check=check)
 
@@ -115,9 +122,9 @@ def main():
             record = json.loads(hc("get", "integration").stdout)
             print("status:", json.dumps({key: record.get(key) for key in ("state", "status", "turn", "exit_code")}))
             print("screen (diagnostic only):", hc("read", "integration", "--lines", "30").stdout)
-            assert (record.get("status") or {}).get("state") == "idle", "No idle hook status; startup may require a human (see diagnostic screen)"
+            assert (record.get("status") or {}).get("state") == "idle", "No idle reporter status; startup may require a human (see diagnostic screen)"
             assert record.get("turn", 0) >= 1, "No working-to-idle transition observed"
-            print("PASS: real launcher, hooks, relay and hc status")
+            print("PASS: real launcher, built-in reporter and hc status")
             verify_followup(hc, record["turn"])
             if args.question:
                 server.ask_question = True

@@ -1,4 +1,5 @@
-"""Launch one new Polytoken session in one hc-owned terminal."""
+"""Launch attached Polytoken with its built-in Herdr status reporter."""
+# pattern: Imperative Shell
 import os
 import signal
 from contextlib import contextmanager
@@ -8,40 +9,17 @@ import shutil
 import sys
 import tempfile
 
-from .config import validate, validate_global, global_directory, validate_project_with_global
-from .relay import Relay
+from .report import polytoken_command, session_id
+from .reporter import reporter_environment
 from .output import terminal_output
 from .stream import SerializedOutput
 from .proxy import run_proxy
 
 
 def launch_command(name, cwd, config, model, prompt):
-    if config is None:
-        validate_global(global_directory())
-        validate_project_with_global(cwd)
-    else:
-        config = Path(config).resolve()
-        if config != (Path(cwd).resolve() / ".polytoken").resolve():
-            raise ValueError("Polytoken hook discovery requires config at <cwd>/.polytoken")
-        validate(config)
     command = ["hc", "run", "--bg", "--name", name, "--cwd", str(Path(cwd).resolve()),
-               sys.executable, str(Path(__file__).with_name("entry.py").resolve()),
-               "run"]
-    command += ["--global"] if config is None else ["--config", str(config)]
-    if model:
-        command += ["--model", model]
-    if prompt:
-        command += ["--prompt", prompt]
-    return command
-
-
-def polytoken_command(config, sessions, model, prompt, resume=None):
-    command = ["polytoken"]
-    if config is not None:
-        command += ["--config-dir", str(config)]
-    if resume:
-        return command + ["continue", "--", resume]
-    command += ["new", "--sessions-dir", str(sessions)]
+               sys.executable, str(Path(__file__).with_name("entry.py").resolve()), "run"]
+    command += ["--global"] if config is None else ["--config", str(Path(config).resolve())]
     if model:
         command += ["--model", model]
     if prompt:
@@ -101,30 +79,25 @@ def wait_for_tui(command, env):
 
 
 @termination_cleanup()
-def run(config, model, prompt, resume=None):
-    if config is None:
-        validate_global(global_directory())
-        validate_project_with_global(Path.cwd())
-    else:
-        if Path(config).resolve() != (Path.cwd() / ".polytoken").resolve():
-            raise ValueError("Polytoken hook discovery requires config at <cwd>/.polytoken")
-        validate(config)
-    if not os.environ.get("HC_TERMINAL_ID") or not sys.stdout.isatty():
-        raise ValueError("run requires an hc terminal; use launch")
+def run(config, model, prompt, resume=None, sessions=None):
+    if resume is not None:
+        session_id(resume)
+    # Outside hc, use native Polytoken with no reporter or registry changes.
+    if not os.environ.get("HC_TERMINAL_ID"):
+        return wait_for_tui(polytoken_command(config, sessions, model, prompt, resume), dict(os.environ))
+    # Explicit registries (including restore) belong to their original caller.
+    # Never reap those registries or the user's default registry.
+    if sessions is not None or resume is not None:
+        sessions = str(Path(sessions).resolve()) if sessions is not None else None
+        env = reporter_environment(dict(os.environ), sessions)
+        with terminal_output() as sink:
+            return run_proxy(polytoken_command(config, sessions, model, prompt, resume), env, SerializedOutput(sink))
     root = Path(tempfile.mkdtemp(prefix="ph-", dir="/tmp"))
-    env = dict(os.environ)
+    sessions = str(root / "sessions")
+    env = reporter_environment(dict(os.environ), sessions)
     try:
         with terminal_output() as sink:
-            output = SerializedOutput(sink)
-            with Relay(root / "relay.sock", output, clear_on_exit=True) as relay:
-                env.update(POLYTOKEN_HERDR_SOCKET=str(relay.path), POLYTOKEN_HERDR_TOKEN=relay.token)
-                try:
-                    return run_proxy(polytoken_command(config, root / "sessions", model, prompt, resume),
-                                     env, output)
-                finally:
-                    ignore_termination()
+            return run_proxy(polytoken_command(config, sessions, model, prompt, resume), env, SerializedOutput(sink))
     finally:
         ignore_termination()
-        # This registry belongs only to this launcher. Closing the TUI ends
-        # the managed session; hc attach/detach leaves the TUI running.
         cleanup_registry(root, env)

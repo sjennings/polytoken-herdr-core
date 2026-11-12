@@ -20,8 +20,8 @@ the status. The adapter never reports `done`.
 | Send work when idle | `hc send worker 'Describe the test setup.' --if idle --wait` |
 | Finish | `hc kill worker` then `hc rm worker` |
 
-- `run --global` must run inside an hc terminal (the Herdr app's panes are)
-  and needs the global hooks from `polytoken-herdr prepare --global`.
+- `run --global` binds the built-in reporter inside hc terminals. Outside hc
+  it runs native Polytoken. `prepare --global` removes obsolete adapter hooks.
 - The plugin's Herdr pane is the `polytoken` mod: open it with
   `herdr-app do tab.new --name Polytoken --mod polytoken`. It starts
   sessions, resumes stored ones and shows setup problems.

@@ -16,8 +16,8 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   in 11.5 px `dim` beside it.
 - **Setup card** (only when something is missing): a `surface` card with an
   8 px radius and a 1 px `border`, "Setup incomplete" in 12.5 px semibold
-  `blocked`, one 12 px `muted` line per problem (launcher, app-menu entry,
-  global hooks), the fixing `install.sh` command in 12 px semibold `accent`,
+  `blocked`, one 12 px `muted` line per problem (launcher or app-menu entry),
+  the fixing `install.sh` command in 12 px semibold `accent`,
   and a "Check again" button.
 - **Start a session**: an 11.5 px `dim` label, then a row with a 28 px
   model input (`surface` background, `input` border, placeholder "default
@@ -46,8 +46,8 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   the focused pane, both running the launcher with `--continue <id>` from
   the session's project folder. A session that is not running is expected
   to report status like a new one; that is not yet verified at runtime. A
-  running session is reattached and is not expected to report status: its
-  daemon's hooks still carry the relay of the launch that started it.
+  running session is reattached. Its TUI is expected to own reporter callbacks;
+  that new-path runtime assertion remains unverified.
 - The setup check runs when the pane opens and when "Check again" is
   pressed. It reads; it never installs, repairs or writes anything.
 - With nothing missing, the setup card is absent.
@@ -59,25 +59,24 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   `pane.split --mod polytoken`), no props. `main.js` default-exports one
   `View` holding an `InputState`.
 - `herdr`: `focused()`, `home()`, `appHome()`, `knownAgents()` (the
-  app-menu `run` argv), `exec()` four ways (`sh -c test -x` on
-  `~/.local/bin/polytoken-herdr`; `sh -c` reading
-  `${XDG_CONFIG_HOME:-$HOME/.config}/polytoken/hooks.json`; `sh -c`
-  resolving the mods symlink so the install command names the checkout
+  app-menu `run` argv), `exec()` three ways (`sh -c test -x` on
+  `~/.local/bin/polytoken-herdr`; `sh -c` resolving the mods symlink so the
+  install command names the checkout
   that holds `install.sh`; `polytoken sessions --all --format json`),
   `run()`, `theme()`. Commands: `tab.new {name, argv}`,
   `pane.split {direction, pane, argv}`.
 - Sessions launch through the `polytoken` entry the plugin's `install.sh`
   writes to `programs.json`, falling back to the linked launcher. The
-  status reporting itself comes from polytoken-herdr-core's hooks, not from
-  this mod.
+  status reporting itself comes from Polytoken's built-in Herdr reporter,
+  translated by polytoken-herdr-core.
 - No icons or art; the status colors are the theme's.
 
 ## Watch out
 
-- `herdr-app check` proves only the first render; the setup card's three
-  states and a real launch need the live app.
-- The mod is trusted code with command access. It runs four read-only
-  commands: `sh -c test -x` of the launcher, `sh -c cat` of the hooks file, `sh -c readlink -f` of its own
+- `herdr-app check` proves only the first render; the setup card's states
+  and a real launch need the live app.
+- The mod is trusted code with command access. It runs three read-only
+  commands: `sh -c test -x` of the launcher, `sh -c readlink -f` of its own
   mods entry, and `polytoken sessions --all --format json`. It reads the
   user's `programs.json` via `knownAgents()`. Resuming starts the launcher
   through `sh -c 'cd -- "$1" && shift && exec "$@"'` in the project folder.
@@ -90,14 +89,10 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   default registry and the adapter does not reap it, so closing its tab
   leaves the daemon running, detached. Polytoken reports no TUI
   attachment, so the list cannot hide a running session that is open in
-  another terminal. Whether status binds when a stopped session resumes
-  (the daemon must report `session_start`) is not yet runtime-tested; a
-  reattached running daemon is expected to report, if at all, to the relay
-  of the launch that started it, which is gone.
+  another terminal. Stopped and running resumes through the built-in reporter
+  still need new-path runtime checks.
 - A copied (not linked) mod cannot name its checkout, so the setup card
   shows `./install.sh` with a note to run it from the checkout.
-- With `XDG_CONFIG_HOME` set, the hooks check follows it, matching the
-  adapter's own config discovery.
 
 ## Done when
 
@@ -109,6 +104,6 @@ One column, 12 px padding, theme `background`, all text in the UI font.
   model turn.
 - Not yet verified: a stopped session's "Tab" button resumes it in a new
   tab that reports status. A closed resumed tab's session comes back as
-  "running" and reattaches without status reporting.
+  "running"; reattached reporting also needs a runtime check.
 - `tests/test_plugin_scripts.py` links and unlinks the mod with the rest of
   the plugin.

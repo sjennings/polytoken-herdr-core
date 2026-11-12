@@ -25,6 +25,7 @@ def program_entry(run):
         "tint": False,
         "tile": "#6d28d9",
         "run": list(run),
+        "match": ["firstmate-polytoken"],
     }
 
 
@@ -65,7 +66,8 @@ def install_app(home, launcher):
 
     Existing entries under other keys are preserved. A differing previous
     entry for this adapter is saved to programs.json.herdr-backup before it
-    is replaced. Returns True when programs.json changed.
+    is updated (the first backup is retained). Unknown fields and match aliases
+    are preserved. Returns True when programs.json changed.
     """
     home = Path(home)
     launcher = Path(launcher)
@@ -86,12 +88,22 @@ def install_app(home, launcher):
         document["programs"] = programs
     if not isinstance(programs, dict):
         raise ValueError('programs.json "programs" must contain an object')
+    previous = programs.get(PROGRAM_KEY, {})
+    if not isinstance(previous, dict):
+        raise ValueError("polytoken program entry must contain an object")
+    aliases = previous.get("match", [])
+    if not isinstance(aliases, list) or not all(isinstance(alias, str) for alias in aliases):
+        raise ValueError("polytoken match must contain an array of strings")
+    entry = dict(previous, **entry)
+    entry["match"] = list(dict.fromkeys(aliases + entry["match"]))
     if programs.get(PROGRAM_KEY) == entry:
         _install_icon(home)
         return False
-    if PROGRAM_KEY in programs and original is not None:
+    backup_path = home / BACKUP_NAME
+    if (PROGRAM_KEY in programs and original is not None
+            and not (backup_path.exists() or backup_path.is_symlink())):
         # Refuse to overwrite an earlier recovery copy.
-        with (home / BACKUP_NAME).open("xb") as backup:
+        with backup_path.open("xb") as backup:
             os.chmod(backup.name, 0o600)
             backup.write(original)
     programs[PROGRAM_KEY] = entry

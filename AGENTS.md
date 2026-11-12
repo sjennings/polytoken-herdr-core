@@ -1,11 +1,11 @@
 # Working on polytoken-herdr-core
 
-Last verified: 2026-10-31
+Last verified: 2026-11-12
 
 ## Scope and safety
 
 Standalone Python standard-library adapter for stock, closed-source Polytoken.
-Use documented hooks and CLI surfaces, and `hc`, not legacy `herdr`. Read
+Use documented reporter and CLI surfaces, and `hc`, not legacy `herdr`. Read
 `hc --skill` before runtime work.
 
 Runtime tests own their terminals and use a unique HC_SESSION, isolated HOME/XDG
@@ -18,8 +18,8 @@ Keep credentials out of output and context.
 
 ```sh
 python3 -m unittest discover -s tests -v
-python3 scripts/probe_hc.py --relay --split-csi --proxy
-python3 scripts/probe_polytoken.py --daemon --global --question
+python3 scripts/probe_reporter.py
+python3 scripts/probe_stock_reporter.py
 ```
 
 Human-only combined probe:
@@ -39,38 +39,36 @@ process disappearance; they cannot rule out unobserved detached processes.
 
 ## Contracts and code map
 
-- `status.py` binds on session_start, rejects other sessions, retains closed IDs,
-  and treats idle as handback rather than task success. No done status.
-- `hook.py`/`relay.py` report observational facts with empty hook stdout, fixed OSC
-  strings and bounded transport. Credentials prevent accidental routing, not
-  malicious same-user access. Reports may be lost or reordered.
+- `report.py` parses built-in reporter callbacks and validates session IDs. Idle
+  means handback, not task success; no done status. `reporter.py` binds the absolute
+  callback executable, reopens `/dev/tty` and records validated restore labels.
 - `proxy.py`/`stream.py`/`output.py` serialize TUI and status writes. Retain the PTY
   slave through final drain on macOS. Deadlines: status 0.2s, bulk output 5s.
 - `launcher.py` owns a private registry; failed reap retains it for recovery.
   Never substitute a global reap. It signals the immediate child, not all groups.
-- `config.py` supports fresh project setup and opt-in global merge with backup,
-  conflict refusal and idempotence. Global launch rejects project disable/duplicate
-  entries. Arbitrary --config-dir did not redirect project hook discovery on 0.9.4.
+- `config.py` migrates obsolete project/global adapter hooks with a retained
+  backup, preserving other configuration. No new status hooks are installed;
+  status no longer depends on project hook discovery.
 - `scripts/` contains isolated probes; `tests/` contains unittest regressions.
 
 ## Verified delivery and follow-up roadmap
 
-93 tests pass. Project and global human runs established status, ordinary send,
-viewer detach/reattach and terminal shutdown with status cleared. Two observed
-processes disappeared in the global run. Global headless question probe passed
-blocked status, close-on-reap and empty private session listing. Full evidence
-and caveats are in docs/review.md. Do not repeat passed human checks without a
-specific new assertion.
+80 tests pass. The built-in callback bridge has isolated working/idle/blocked,
+release and split-CSI runtime evidence on hc 0.1.20. Stock Polytoken 0.9.7
+stopped at its licence agreement with no callbacks; no agent answered it.
+Earlier project/global human passes cover only the former hook/relay path.
+Full evidence and caveats are in docs/review.md. Do not repeat passed human
+checks without a specific new assertion.
 
 The integration is delivered as experimental. Follow-up coverage:
 
-1. Verify answer-to-idle in the stock TUI after the mock-provider one-shot fix.
+1. Verify stock reporter callbacks, resume/restore and answer-to-idle in the TUI.
    The prior repeated-question behavior was a probe defect, not an adapter result.
 2. Expand permission/cancellation/provider/subagent and detached-process coverage.
    Never claim exhaustive cleanup from a finished hc record or observed PID set.
 3. Verify persistent-profile acceptance across two runs and Linux runtime behavior.
-4. Consider removing unused launcher.wait_for_tui after reference review and user
-   agreement; do not replace runtime evidence with tests of that obsolete helper.
+4. `launcher.wait_for_tui` now serves standalone runs outside hc; managed runs
+   retain the PTY proxy to prevent callback/TUI control-sequence interleaving.
 
 Keep README.md for humans choosing and using the project. Keep agent directions
 and the roadmap here; detailed evidence belongs in docs/review.md. Apply deslop
