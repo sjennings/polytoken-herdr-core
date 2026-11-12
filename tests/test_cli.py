@@ -15,6 +15,16 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(cli.main(), 0)
                 run.assert_called_once_with(None, None, None, "valid-id", "/path with spaces")
 
+    def test_obsolete_hook_command_is_silent_and_succeeds(self):
+        import subprocess
+        from pathlib import Path
+        entry = Path(cli.__file__).with_name("entry.py")
+        for extra in ([], ["--unknown", "operand"]):
+            with self.subTest(extra=extra):
+                result = subprocess.run([sys.executable, str(entry), "hook", *extra],
+                                        input=b'{"prompt_id": "p"}', capture_output=True)
+                self.assertEqual((result.returncode, result.stdout, result.stderr), (0, b"", b""))
+
     def test_restore_passes_only_validated_labels_to_launcher(self):
         with patch.object(sys, "argv", ["polytoken-herdr", "restore"]), \
              patch.object(cli, "restore_labels", return_value=("abc", "/sessions")), \

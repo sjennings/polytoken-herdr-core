@@ -14,11 +14,11 @@ The global hook location is `$XDG_CONFIG_HOME/polytoken/hooks.json`, defaulting 
 - `herdr-interrogative_wants_open`
 - `herdr-interrogative_has_closed`
 
-Other entries are preserved. The original file is saved as `hooks.json.herdr-backup` if no earlier backup exists. Malformed JSON and symlinked hook files are refused. Close configuration editors while migrating. Already-running Polytoken daemons may retain old hooks until restarted; the installer does not drive those sessions.
+Other entries are preserved. The original file is saved as `hooks.json.herdr-backup` if no earlier backup exists. Malformed JSON and symlinked hook files are refused. Close configuration editors while migrating. Already-running Polytoken daemons may retain old hooks until restarted; the installer does not drive those sessions. Unmigrated entries call `polytoken-herdr hook`, which now does nothing and exits 0.
 
 `polytoken-herdr prepare --global` and `remove --global` both perform that cleanup. They install no new hooks. `prepare DIRECTORY` creates the directory if needed and migrates any old adapter hooks there, preserving provider configuration. `--config DIRECTORY` passes the directory to Polytoken; status no longer depends on Polytoken's project hook-discovery rules. `--global` uses native configuration discovery.
 
-Installer reruns update the owned menu fields and launch command while preserving other program entries, unknown fields and existing match aliases. They add `firstmate-polytoken` and retain the first `programs.json.herdr-backup`.
+Installer reruns update the owned menu fields and launch command while preserving other program entries, unknown fields and existing match aliases. They retain the first `programs.json.herdr-backup`.
 
 ## Launch and interact
 
@@ -56,7 +56,7 @@ The adapter never emits `done`. It sets `HERDR_ENV=1`, `HERDR_PANE_ID` to the hc
 
 Callbacks reopen `/dev/tty`, because their standard streams may be null. The private PTY proxy extracts only the four fixed callback OSC sequences and serializes them with TUI output at complete control-sequence and UTF-8 boundaries. A direct-write probe reproduced split-CSI corruption without this proxy. Unknown output remains TUI output; no screen text is used to infer status. Model/facet metadata is ignored because OSC 7501 has no equivalent fields.
 
-This removes the old hook-event reduction, hook discovery dependency and relay socket. Reports still depend on successful callbacks and terminal output. Status-only writes have a 0.2-second deadline and bulk output has five seconds. A report arriving during an incomplete TUI sequence is deferred; pending snapshots can be coalesced. A release waiting on an incomplete sequence is emitted after cancellation at final drain. Callback or label failures are not proof that hc observed a state. Abrupt termination can skip release. The adapter does not change permissions or provide a security boundary against processes running as the same OS user.
+This removes the old hook-event reduction, hook discovery dependency and relay socket. Reports still depend on successful callbacks and terminal output. Status-only writes have a 0.2-second deadline and bulk output has five seconds. A report arriving during an incomplete TUI sequence is deferred; pending snapshots can be coalesced. When the run ends, the adapter cancels any incomplete sequence and writes a clear itself, whether or not Polytoken's release arrived. Callback or label failures are not proof that hc observed a state. If the adapter itself is killed, the last status can remain. The adapter does not change permissions or provide a security boundary against processes running as the same OS user.
 
 ## Resume and restore
 

@@ -32,9 +32,5 @@ class SerializedOutput:
 
     def finish(self):
         incomplete = self.stream.mode != "text" or self.stream.utf8_remaining
-        pending = self.stream.pending
         self.stream = ReporterStream()
-        if incomplete:
-            self._emit(b"\x18")
-        if pending == RELEASE_OUTPUT:
-            self._emit(pending)
+        self._emit((b"\x18" if incomplete else b"") + RELEASE_OUTPUT)

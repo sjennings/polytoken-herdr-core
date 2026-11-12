@@ -64,14 +64,13 @@ class AppInstallTests(unittest.TestCase):
             launcher = Path(root) / "polytoken-herdr"
             launcher.touch()
             original = {"programs": {"polytoken": {"name": "Custom", "run": ["old"],
-                        "match": ["custom-wrapper", "firstmate-polytoken"], "extension": "keep"}}}
+                        "match": ["custom-wrapper", "second-wrapper"], "extension": "keep"}}}
             (home / "programs.json").write_text(json.dumps(original))
             (home / appconfig.BACKUP_NAME).write_text("old backup")
             appconfig.install_app(home, launcher)
             entry = json.loads((home / "programs.json").read_text())["programs"]["polytoken"]
             self.assertEqual(entry["extension"], "keep")
-            self.assertIn("custom-wrapper", entry["match"])
-            self.assertIn("firstmate-polytoken", entry["match"])
+            self.assertEqual(entry["match"], ["custom-wrapper", "second-wrapper"])
             self.assertEqual(entry["run"], [str(launcher), "run", "--global"])
             self.assertEqual((home / appconfig.BACKUP_NAME).read_text(), "old backup")
             self.assertFalse(appconfig.install_app(home, launcher))

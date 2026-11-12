@@ -16,7 +16,7 @@ cd polytoken-herdr-core
 ./install.sh
 ```
 
-The installer links the launcher into `~/.local/bin`, the agent skill into `~/.claude/skills`, and the Polytoken mod into the Herdr app. It adds the menu entry and icon, preserves unrelated programs and custom match aliases, and adds the `firstmate-polytoken` alias. The entry's launch command is `polytoken-herdr run --global`.
+The installer links the launcher into `~/.local/bin`, the agent skill into `~/.claude/skills`, and the Polytoken mod into the Herdr app. It adds the menu entry and icon, and preserves unrelated programs and custom match aliases. The entry's launch command is `polytoken-herdr run --global`.
 
 Both `./install.sh` and `./uninstall.sh` remove obsolete global hooks from the old adapter, including entries pointing at a moved checkout. Other hooks stay in place. The first `hooks.json.herdr-backup` and `programs.json.herdr-backup` are retained. Rerun the installer after moving the checkout; the reporter calls the adapter by its absolute path.
 
@@ -65,6 +65,8 @@ polytoken-herdr prepare /absolute/project/.polytoken
 ```
 
 This creates the directory if needed or removes only obsolete adapter hooks from an existing one. Provider configuration and unrelated hooks are preserved. `run --config DIRECTORY` and `launch --config DIRECTORY` still pass that directory to Polytoken; status no longer depends on where hooks are discovered.
+
+Hook entries left in an unmigrated `hooks.json` still call `polytoken-herdr hook`. That command now does nothing and exits 0, so they are harmless until removed.
 
 ## Status and limits
 

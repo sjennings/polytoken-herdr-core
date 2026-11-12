@@ -11,6 +11,8 @@ from .reporter import callback, restore_labels
 
 
 def main():
+    if sys.argv[1:2] == ["hook"]:
+        return 0
     if sys.argv[1:2] == ["pane"]:
         try:
             return callback(sys.argv[2:])

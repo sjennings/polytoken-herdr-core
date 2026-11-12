@@ -82,12 +82,11 @@ class PluginScriptTests(unittest.TestCase):
                 self.assertFalse((home / "xdg2" / "polytoken").exists())
 
             document = json.loads((home / "herdr-app" / "programs.json").read_text())
-            document["programs"]["polytoken"]["match"].append("my-extra-wrapper")
+            document["programs"]["polytoken"]["match"] = ["my-extra-wrapper"]
             (home / "herdr-app" / "programs.json").write_text(json.dumps(document))
             subprocess.run([str(ROOT / "install.sh")], env=environment,
                            check=True, capture_output=True, text=True)
-            self.assertIn("my-extra-wrapper", self.programs(home)["polytoken"]["match"])
-            self.assertIn("firstmate-polytoken", self.programs(home)["polytoken"]["match"])
+            self.assertEqual(self.programs(home)["polytoken"]["match"], ["my-extra-wrapper"])
             # Uninstall also cleans stale hooks even if an older version added them later.
             hooks.write_text(json.dumps(entries + ["!herdr-stop"]))
             subprocess.run([str(ROOT / "uninstall.sh")], env=environment,

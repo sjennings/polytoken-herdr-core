@@ -25,7 +25,6 @@ def program_entry(run):
         "tint": False,
         "tile": "#6d28d9",
         "run": list(run),
-        "match": ["firstmate-polytoken"],
     }
 
 
@@ -95,7 +94,6 @@ def install_app(home, launcher):
     if not isinstance(aliases, list) or not all(isinstance(alias, str) for alias in aliases):
         raise ValueError("polytoken match must contain an array of strings")
     entry = dict(previous, **entry)
-    entry["match"] = list(dict.fromkeys(aliases + entry["match"]))
     if programs.get(PROGRAM_KEY) == entry:
         _install_icon(home)
         return False

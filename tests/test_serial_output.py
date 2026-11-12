@@ -52,7 +52,15 @@ class SerializedOutputTests(unittest.TestCase):
         output.feed(b"\x1b]7501;state=working:app=polytoken\x1b\\")
         output.finish()
         output.feed(b"CLEAR")
-        self.assertEqual(sink.getvalue(), b"\x1b]unfinished\x18CLEAR")
+        self.assertEqual(sink.getvalue(), b"\x1b]unfinished\x18\x1b]7501;state=clear\x1b\\CLEAR")
+
+    def test_finish_clears_status_when_no_release_arrived(self):
+        sink = io.BytesIO()
+        output = SerializedOutput(sink)
+        output.feed(b"\x1b]7501;state=working:app=polytoken\x1b\\screen")
+        output.finish()
+        self.assertEqual(sink.getvalue(),
+                         b"\x1b]7501;state=working:app=polytoken\x1b\\screen\x1b]7501;state=clear\x1b\\")
 
 
 class ReporterFinishTests(unittest.TestCase):
