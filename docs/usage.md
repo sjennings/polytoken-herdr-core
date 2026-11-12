@@ -1,6 +1,6 @@
 # Setup and use (experimental)
 
-Use Python 3.10+ on Unix, stock Polytoken and herdr-core (`hc`). The adapter uses only the Python standard library. Current local checks use Polytoken 0.9.7 and hc 0.1.20 on macOS. Stock reporter startup still needs a human to decide the first-run licence agreement; see [the verification record](review.md).
+Use Python 3.10+ on Unix, stock Polytoken and herdr-core (`hc`). The adapter uses only the Python standard library. Current local checks use Polytoken 0.9.7 and hc 0.1.20 on macOS. The operator decided the first-run agreement in a dedicated scratch profile; native start, release, restore and blocked-input checks then passed without further dialog responses. See [the verification record](review.md).
 
 ## Installation and migration
 
@@ -67,7 +67,7 @@ polytoken-herdr restore
 
 `--continue` ignores `--model` and `--prompt` and uses native history/registry discovery. `restore` reads `polytoken.session` and `polytoken.sessions_dir` labels from the current terminal, validates the ID and directory, and resumes that session. Callback-supplied command text is never executed. IDs use ASCII letters, numbers, dot, underscore and dash, and cannot start with dash.
 
-`run --sessions-dir DIRECTORY` (also `--sessions-dir=DIRECTORY`) selects a caller-owned registry, including for restore. Its path is recorded absolutely. The adapter never reaps or deletes an explicit registry or the native registry of a resumed session. Closing a resumed TUI leaves its daemon detached. A newly attached TUI is expected to own its reporter callbacks even when the daemon already exists; that stock runtime assertion remains pending. A new managed session's private tree is deleted on cleanup, so its recorded label cannot restore history that has already been deleted. Native and explicit registries are retained; durable restoration of disposable managed sessions is not implemented.
+`run --sessions-dir DIRECTORY` (also `--sessions-dir=DIRECTORY`) selects a caller-owned registry, including for restore. Its path is recorded absolutely. The adapter never reaps or deletes an explicit registry or the native registry of a resumed session. Closing a resumed TUI leaves its daemon detached. A newly attached TUI is expected to own its reporter callbacks even when the daemon already exists; that behavior passed an isolated stock-TUI check with the retained registry. A new managed session's private tree is deleted on cleanup, so its recorded label cannot restore history that has already been deleted. Native and explicit registries are retained; durable restoration of disposable managed sessions is not implemented.
 
 ## Cleanup and recovery
 

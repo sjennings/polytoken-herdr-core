@@ -95,9 +95,11 @@ def main() -> int:
         with callback_log.open("x"):
             callback_log.chmod(0o600)
         recorder = root / "recorder"
-        recorder.write_text("#!/usr/bin/env python3\nimport json, os, sys\n"
-                            f"with open({str(callback_log)!r}, 'a') as output: output.write(json.dumps(dict(session={session!r}, argv=sys.argv[1:])) + '\\n')\n"
-                            f"os.execv({str(ROOT / 'bin/polytoken-herdr')!r}, [{str(ROOT / 'bin/polytoken-herdr')!r}, *sys.argv[1:]])\n")
+        recorder.write_text("#!/usr/bin/env python3\nimport json, os, subprocess, sys\n"
+                            f"result = subprocess.run([{str(ROOT / 'bin/polytoken-herdr')!r}, *sys.argv[1:]], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)\n"
+                            f"record = dict(session={session!r}, argv=sys.argv[1:], exit=result.returncode, stderr=result.stderr[:4096], binding={{key:os.environ.get(key) for key in ('HC_TERMINAL_ID','HERDR_PANE_ID','POLYTOKEN_HERDR_REPORTER','HC_SESSION')}})\n"
+                            f"with open({str(callback_log)!r}, 'a') as output: output.write(json.dumps(record) + '\\n')\n"
+                            "raise SystemExit(result.returncode)\n")
         recorder.chmod(0o700)
         owned = set()
         started = False

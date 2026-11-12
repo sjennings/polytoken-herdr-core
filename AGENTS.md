@@ -54,9 +54,10 @@ process disappearance; they cannot rule out unobserved detached processes.
 ## Verified delivery and follow-up roadmap
 
 87 tests pass. The built-in callback bridge has isolated working/idle/blocked,
-release and split-CSI runtime evidence on hc 0.1.20. Stock Polytoken 0.9.7
-stopped at its licence agreement with no callbacks; no agent answered it.
-Earlier project/global human passes cover only the former hook/relay path.
+release and split-CSI runtime evidence on hc 0.1.20. After an operator decided the agreement in its original scratch HOME, stock
+Polytoken 0.9.7 passed start/release/restore, follow-up and unanswered blocked-input
+checks through the public adapter. No acceptance records were copied. Earlier
+project/global human passes cover only the former hook/relay path.
 Full evidence and caveats are in docs/review.md. Do not repeat passed human
 checks without a specific new assertion.
 

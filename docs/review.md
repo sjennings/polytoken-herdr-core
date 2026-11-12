@@ -105,18 +105,50 @@ is used. Every cleanup is attempted even if an earlier action fails.
   captures have their own session-named file. `--capture-dir` collects these
   records without replacing previous runs.
 
+### Operator acceptance and fresh combined stock check
+
+The operator reported “polytoken-herdr-core reporter: human check run, EULA agreed”.
+Their `phc-stock-f6b2d898ecab` capture contains working, idle, metadata and release
+argv, but its initial hc status was null and its journal lacks cleanup completion.
+That historical result remains incomplete; it is not called a pass.
+
+The exact owned scratch HOME was identified through its session-named recorder
+and reused in place, with the operator's choices intact. No acceptance file was
+copied or modified. Fresh stock session `phc-stock-5d4fc2fb19a9` reached idle with
+native callback exit codes 0 and no callback stderr; the earlier null-status
+result was not reproduced. Actual metadata arguments carry display tokens for
+model and facet; state reports carry the terminal operand, source, agent, state,
+sequence, session ID and a trailing resume argv after `--`.
+
+Combined session `probe-31085deb41d9` exercised actual public adapter commands
+inside an owned shell and an explicit private caller-owned registry:
+
+1. `run --global --sessions-dir ...` started real stock Polytoken and reached idle.
+2. Ordinary follow-up completed a newer idle turn.
+3. `/detach` released the TUI and hc status cleared.
+4. `restore` read the same terminal's recorded labels and reattached the same native session.
+5. Another ordinary follow-up completed, then the mock question reported blocked.
+   An ordinary send was refused; no answer was supplied.
+6. Owned terminal shutdown and authenticated private-daemon cleanup completed.
+   The default core's terminal identities were unchanged before/after.
+
+This combined probe has no forced CLI cleanup flag. Its session journal is
+exclusive and records each phase. It validates retained-registry restoration;
+it does not make disposable new-session history durable or establish every UI,
+permission, cancellation, provider or detached-process path. Installed Polytoken
+was 0.9.7 and hc was 0.1.20; older ABI compatibility is still not established.
+
 ### Known limits and remaining checks
 
-- Stock Polytoken reporter callback argv and working/idle/blocked/release still
-  need observation after a human decides the licence agreement in an isolated
-  profile. Documentation and synthetic callback probes do not substitute for it.
+- Native reporter argv and start/idle/blocked/release now have isolated stock
+  evidence above; the earlier unanswered-agreement records remain historical.
 - New managed sessions retain the old disposable-history behavior: cleanup deletes
   their private tree. A recorded restore label cannot recover history deleted
   with that tree; restore is usable only while that history remains available.
   Durable restoration of such sessions needs an explicit design decision.
-- Resume/restore from a running or stopped daemon, history after private-registry
-  cleanup, real menu/mod/alias launches, answer-to-idle, and process cleanup need
-  new-path runtime checks. Static argv and installer tests do not prove the app UI.
+- Restore of a running daemon in a retained registry passed. Stopped-daemon
+  history, real menu/mod/alias launches, answer-to-idle and broader process cleanup
+  still need runtime checks. Static argv and installer tests do not prove the app UI.
 - The bridge removes asynchronous hook reduction and socket delivery. Failed
   callbacks, terminal stalls and abrupt process death can still lose reports.
   Status deferred during incomplete terminal sequences can be coalesced; idle
