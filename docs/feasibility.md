@@ -1,4 +1,4 @@
-> Historical investigation of the former hook/relay path. The current reporter bridge and its evidence are described in [review.md](review.md).
+> Historical investigation of the former hook/relay path. The current reporter bridge and its evidence are described in [review.md](review.md). `scripts/probe_hc.py` and `scripts/probe_polytoken.py` were removed with that path, so the commands below are a record and no longer run.
 
 # Integration feasibility
 
