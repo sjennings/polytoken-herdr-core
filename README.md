@@ -54,7 +54,7 @@ hc attach worker
 
 Ctrl+\\ detaches the viewer. For direct herdr-core users, `hc get worker` reads status, `hc send worker 'Next task' --if idle --wait` sends ordinary work, and `hc kill worker` followed by `hc rm worker` finishes it. Never use sends to answer an agreement or bypass a blocked decision.
 
-The adapter records the session ID and registry as terminal labels. `polytoken-herdr restore` resumes those labels from the same terminal. It validates the ID and never executes a callback's supplied resume command. Restoration still needs a stock-TUI runtime check.
+The adapter records the session ID and registry as terminal labels. `polytoken-herdr restore` resumes those labels from the same terminal. It validates the ID and never executes a callback's supplied resume command. Restoration still needs a stock-TUI runtime check. A new managed session's private history is disposable and cannot be restored after cleanup deletes it.
 
 ## Upgrade from hooks
 

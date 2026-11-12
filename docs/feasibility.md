@@ -1,3 +1,5 @@
+> Historical investigation of the former hook/relay path. The current reporter bridge and its evidence are described in [review.md](review.md).
+
 # Integration feasibility
 
 Investigated 2026-10-31 with installed Polytoken 0.9.4 and hc 0.1.15.

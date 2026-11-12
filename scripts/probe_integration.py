@@ -18,6 +18,7 @@ from mock_provider import Provider
 from probe_profile import prepare_profile
 from probe_processes import descendants, assert_exited
 from probe_reporter import unchanged_default
+from probe_capture import Capture
 
 
 def verify_followup(hc, previous_turn):
@@ -49,6 +50,7 @@ def verify_shutdown(hc):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--capture-dir", type=Path, help="Keep append-only per-session evidence here")
     parser.add_argument("--interactive", action="store_true",
                         help="Attach the human directly to the scratch terminal before checking status")
     parser.add_argument("--question", action="store_true",
@@ -69,6 +71,7 @@ def main():
         env.update(HOME=str(home), TERM="xterm-256color", HC_SESSION="probe-" + uuid.uuid4().hex[:8])
         env["HC_SOCKET"] = str(root / "core.sock")
         owned_session = env["HC_SESSION"]
+        capture = Capture(owned_session, args.capture_dir)
         for kind in ("CONFIG", "STATE", "DATA", "CACHE", "RUNTIME"):
             path = (root if kind == "RUNTIME" else home) / kind.lower()
             path.mkdir(mode=0o700, exist_ok=True)
@@ -111,6 +114,7 @@ def main():
                 command = launch_command("integration", project, config_dir, "local-probe", "Reply OK")
             result = subprocess.run(command, env=env, text=True, capture_output=True, timeout=30, check=True)
             launched = True
+            capture.write("terminal_created", terminal="integration")
             print("launch:", result.stdout, flush=True)
             if args.interactive:
                 print("Attaching ONLY to the disposable test terminal. Read and decide on the agreement yourself.")
@@ -146,6 +150,7 @@ def main():
             server.shutdown()
             server.server_close()
             thread.join()
+            capture.write("cleanup_complete")
 
 
 if __name__ == "__main__":

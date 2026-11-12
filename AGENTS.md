@@ -53,7 +53,7 @@ process disappearance; they cannot rule out unobserved detached processes.
 
 ## Verified delivery and follow-up roadmap
 
-80 tests pass. The built-in callback bridge has isolated working/idle/blocked,
+87 tests pass. The built-in callback bridge has isolated working/idle/blocked,
 release and split-CSI runtime evidence on hc 0.1.20. Stock Polytoken 0.9.7
 stopped at its licence agreement with no callbacks; no agent answered it.
 Earlier project/global human passes cover only the former hook/relay path.

@@ -2,6 +2,7 @@
 """Exercise reporter callbacks in an owned hc core, without launching an agent."""
 # pattern: Imperative Shell
 from contextlib import contextmanager
+import argparse
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,8 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from polytoken_herdr.reporter import reporter_environment
+from probe_capture import Capture
+from probe_cleanup import cleanup_actions
 
 
 def emit(control: str) -> None:
@@ -67,9 +70,13 @@ def unchanged_default():
 
 def probe() -> None:
     """Create a unique isolated core and verify all translated states and release."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--capture-dir", type=Path, help="Keep append-only per-session evidence here")
+    args = parser.parse_args()
     with unchanged_default(), tempfile.TemporaryDirectory(prefix="phcr-", dir="/tmp") as directory:
         root = Path(directory)
         session = "phc-probe-" + uuid.uuid4().hex[:12]
+        capture = Capture(session, args.capture_dir)
         env = {key: value for key, value in os.environ.items() if key in ("PATH", "LANG", "SHELL", "TMPDIR")}
         env.update(HOME=str(root), HC_SESSION=session, HC_SOCKET=str(root / "core.sock"), TERM="xterm-256color")
         for kind in ("CONFIG", "DATA", "CACHE", "STATE", "RUNTIME"):
@@ -95,8 +102,8 @@ def probe() -> None:
         listener.bind(control)
         listener.listen(1)
         try:
+            started = True  # Also clean up a start interrupted after provisioning.
             hc("server", "start")
-            started = True
             if shutil.which("herdr-app"):
                 checked = subprocess.run(["herdr-app", "check", str(ROOT / "mods/polytoken")],
                                          env=env, cwd=root, capture_output=True, text=True, timeout=15, check=True)
@@ -106,6 +113,7 @@ def probe() -> None:
             record = json.loads(result.stdout)
             identifier = record["address"]
             owned.add(identifier)
+            capture.write("terminal_created", terminal=identifier)
             print("session:", session, "terminal:", identifier, flush=True)
             connection, _ = listener.accept()
             connection.settimeout(10)
@@ -115,6 +123,7 @@ def probe() -> None:
                     assert emitted == {"state": expected, "exit": 0}, emitted
                     record = json.loads(hc("get", identifier).stdout)
                     status = record.get("status")
+                    capture.write("observed", expected=expected, status=status)
                     assert status == (None if expected == "clear" else {"app": "polytoken", "state": expected}), record
                     if expected == "working":
                         screen = hc("read", identifier, "--lines", "0").stdout
@@ -126,12 +135,14 @@ def probe() -> None:
                     stream.write(b"next\n")
             hc("wait", identifier, "--timeout", "5")
         finally:
-            listener.close()
+            actions = [listener.close]
             for identifier in owned:
-                hc("kill", identifier, check=False)
-                hc("rm", identifier, check=False)
+                actions += [lambda identifier=identifier: hc("kill", identifier, check=False),
+                            lambda identifier=identifier: hc("rm", identifier, check=False)]
             if started:
-                hc("server", "stop")
+                actions += [lambda: hc("server", "stop")]
+            cleanup_actions(actions)
+            capture.write("cleanup_complete")
 
 
 if __name__ == "__main__":

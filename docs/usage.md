@@ -67,7 +67,7 @@ polytoken-herdr restore
 
 `--continue` ignores `--model` and `--prompt` and uses native history/registry discovery. `restore` reads `polytoken.session` and `polytoken.sessions_dir` labels from the current terminal, validates the ID and directory, and resumes that session. Callback-supplied command text is never executed. IDs use ASCII letters, numbers, dot, underscore and dash, and cannot start with dash.
 
-`run --sessions-dir DIRECTORY` (also `--sessions-dir=DIRECTORY`) selects a caller-owned registry, including for restore. Its path is recorded absolutely. The adapter never reaps or deletes an explicit registry or the native registry of a resumed session. Closing a resumed TUI leaves its daemon detached. A newly attached TUI is expected to own its reporter callbacks even when the daemon already exists; that stock runtime assertion remains pending.
+`run --sessions-dir DIRECTORY` (also `--sessions-dir=DIRECTORY`) selects a caller-owned registry, including for restore. Its path is recorded absolutely. The adapter never reaps or deletes an explicit registry or the native registry of a resumed session. Closing a resumed TUI leaves its daemon detached. A newly attached TUI is expected to own its reporter callbacks even when the daemon already exists; that stock runtime assertion remains pending. A new managed session's private tree is deleted on cleanup, so its recorded label cannot restore history that has already been deleted. Native and explicit registries are retained; durable restoration of disposable managed sessions is not implemented.
 
 ## Cleanup and recovery
 
@@ -83,13 +83,14 @@ python3 scripts/probe_stock_reporter.py
 
 The callback probe creates a private HOME, XDG directories, socket, unique HC_SESSION and terminal. It verifies working, idle, blocked, release and a deliberately split CSI using null callback streams, then removes only its own terminal/core and compares the default session's terminal identities before and after.
 
-The stock probe uses a local mock provider, disables update checks only in its scratch global config, records callback arguments, and shows any startup decision without answering it. `--interactive --question --profile DIRECTORY` lets a human perform the agreement and question checks in a new or probe-marked profile; it never supplies an answer. A failed cleanup retains its private directory for inspection. Reaching a licence agreement is an incomplete stock reporter check, not a pass. Neither probe copies acceptance records.
+The stock probe uses a local mock provider, disables update checks only in its scratch global config, records callback arguments, and shows any startup decision without answering it. `--interactive --question --profile DIRECTORY` lets a human perform the agreement and question checks in a new or probe-marked profile; it never supplies an answer. The probe stops its owned TUI and authenticates daemons from its private registry before requesting shutdown. A process that ignores shutdown is signalled only after its PID, start time and command are rechecked. All cleanup steps run even if an earlier step fails. It uses no forced CLI option. A failed cleanup retains its private directory for inspection. Reaching a licence agreement is an incomplete stock reporter check, not a pass. Neither probe copies acceptance records.
 
-For human checks, the combined probe remains available:
+For the human check, run one command from the checkout:
 
 ```sh
-python3 scripts/probe_integration.py --interactive --global --question \
-  --profile /absolute/path/to/new-dedicated-test-profile
+python3 scripts/probe_stock_reporter.py --human
 ```
 
-Use a new directory or one previously marked by the probe, one probe at a time. The profile retains only choices the human made there; runtime state remains disposable. Decide the agreement yourself, wait for OK and detach Ctrl+\\. On the next attachment inspect the pending question and detach; empty submission does not dismiss it. The mock asks once if you choose to answer. The historical hook-path passes do not establish that this new reporter path passes those checks.
+The first attachment asks you to decide the agreement, wait for the mock-provider OK and detach with Ctrl+\\. The probe then requests one ordinary test question from idle and attaches again. Inspect the question and detach; you may leave it unanswered. Rejecting the agreement, quitting the TUI, Ctrl+C or closing the probe triggers cleanup. A first attachment that never reaches idle is recorded as incomplete, with exit code 2.
+
+Every run prints its evidence path. Each exact HC_SESSION is recorded before a core starts in an exclusive per-session journal; later runs cannot replace it. `--capture-dir DIRECTORY` collects those journals and raw callback arguments in a chosen directory. To retain only choices you make yourself for a later run, also pass `--profile DIRECTORY`, using a new or probe-marked private directory. Use one probe at a time per profile. The older combined launcher probe is a separate check and is not needed for this one-command reporter check.

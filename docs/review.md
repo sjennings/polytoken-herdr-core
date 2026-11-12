@@ -78,11 +78,42 @@ and core. The failed split-CSI probe also cleaned up its private terminal/core;
 the successful next probe found the same default identities. No acceptance
 record was copied and no agreement, permission or question was answered.
 
+### Follow-up: human-check safety and capture retention
+
+The human reporter check is now one command: `python3 scripts/probe_stock_reporter.py --human`.
+It gives two on-screen steps, reports incomplete startup with exit code 2, and
+unwinds on early exit or SIGTERM. It never supplies a human decision. Cleanup
+uses the installed OpenAPI's authenticated `/health` and `/terminate` routes,
+reading credentials only from its private session tree as described in
+[Daemon Authentication](https://docs.polytoken.dev/reference/daemon-auth/).
+If an authenticated daemon does not exit, the probe rechecks its PID/start-time/
+command identity before signalling that immediate process. No forced CLI flag
+is used. Every cleanup is attempted even if an earlier action fails.
+
+- The follow-up full suite passes **87 tests**. New checks cover exclusive
+  captures, process-identity stability, graceful and deliberately stubborn
+  owned daemon processes, invalid ownership records and cleanup after an error.
+- Early-exit session `phc-stock-5bb466c12636` was sent SIGTERM after owned terminal
+  creation, before any agreement choice. Cleanup completed, the probe exited
+  143, and default terminal identities were unchanged. This tests early startup
+  exit; it does not establish native daemon cleanup after human acceptance.
+- Callback session `phc-probe-5385de0f47f3` passed states/release, split CSI and
+  the mod check with the new capture journal. Default terminal identities were
+  unchanged.
+- Every future probe creates an exclusive per-HC_SESSION journal before starting
+  its core. Session identity is repeated in each record; raw stock callback
+  captures have their own session-named file. `--capture-dir` collects these
+  records without replacing previous runs.
+
 ### Known limits and remaining checks
 
 - Stock Polytoken reporter callback argv and working/idle/blocked/release still
   need observation after a human decides the licence agreement in an isolated
   profile. Documentation and synthetic callback probes do not substitute for it.
+- New managed sessions retain the old disposable-history behavior: cleanup deletes
+  their private tree. A recorded restore label cannot recover history deleted
+  with that tree; restore is usable only while that history remains available.
+  Durable restoration of such sessions needs an explicit design decision.
 - Resume/restore from a running or stopped daemon, history after private-registry
   cleanup, real menu/mod/alias launches, answer-to-idle, and process cleanup need
   new-path runtime checks. Static argv and installer tests do not prove the app UI.
